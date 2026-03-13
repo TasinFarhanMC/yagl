@@ -7,18 +7,31 @@
 #include <lyra/lyra.hpp>
 #include <meta.hpp>
 
-fs::path program_dir = fs::current_path();
-fs::path runtime_dir = fs::current_path();
-fs::path bin_dir;
+Path program_dir = fs::current_path();
+Path runtime_dir = fs::current_path();
+Path bin_dir;
 
-fs::path expand_path(std::string const &input) {
+Path expand_path(std::string const &input) {
   if (input == "%bin") return bin_dir;
-  return fs::path(input);
+  return Path(input);
 };
 
 int main(int argc, const char **argv) {
   bool show_help = false;
-  bin_dir = fs::weakly_canonical(argv[0]).parent_path();
+
+#ifdef __linux__
+  bin_dir = fs::read_symlink("/proc/self/exe").parent_path();
+#elif defined(__APPLE__)
+#include <mach-o/dyld.h>
+  char buf[PATH_MAX];
+  uint32_t size = sizeof(buf);
+  if (_NSGetExecutablePath(buf, &size) == 0) { fs::path bin_dir = fs::path(buf).parent_path(); }
+#elif defined(_WIN32)
+#include <windows.h>
+  char buf[MAX_PATH];
+  GetModuleFileNameA(NULL, buf, MAX_PATH);
+  fs::path bin_dir = fs::path(buf).parent_path();
+#endif
 
   // clang-format off
   lyra::cli cli = lyra::help(show_help)
