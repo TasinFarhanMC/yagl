@@ -1,0 +1,16 @@
+BasedOnStyle: LLVM
+AlignAfterOpenBracket: BlockIndent
+AlignArrayOfStructures: Right
+AllowShortCaseExpressionOnASingleLine: true
+ColumnLimit: 152
+NamespaceIndentation: Inner
+AlignOperands: AlignAfterOperator
+AllowShortBlocksOnASingleLine: Always
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortEnumsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLoopsOnASingleLine: true
+EmptyLineBeforeAccessModifier: Always
+PackConstructorInitializers: CurrentLine
+SpaceBeforeCpp11BracedList: true
+BreakBeforeConceptDeclarations: Never

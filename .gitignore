@@ -1,0 +1,11 @@
+build/
+bin/
+lib/
+.cache/
+imgui.ini
+*.log
+*.data*
+*.svg*
+*.xcf*
+*.cppx
+*.hppx
