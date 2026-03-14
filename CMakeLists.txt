@@ -5,11 +5,7 @@ project(YAGL C CXX)
 cmake_policy(SET CMP0072 NEW)
 find_package(OpenGL REQUIRED)
 
-set(CPM_USE_LOCAL_PACKAGES
-    ON
-    CACHE BOOL "")
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_cpm.cmake)
-
 cpmaddpackage("gh:g-truc/glm#1.0.3")
 cpmaddpackage("gh:nothings/stb#master")
 cpmaddpackage("gh:fmtlib/fmt#12.1.0")
