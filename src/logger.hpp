@@ -6,7 +6,7 @@
 namespace logger {
 std::string current_time();
 
-void start(bool disable, bool console);
+bool start(bool disable, bool console);
 void write(const std::string &str);
 void close();
 
