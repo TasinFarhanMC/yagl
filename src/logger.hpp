@@ -6,14 +6,12 @@
 namespace logger {
 std::string current_time();
 
-void start(bool console);
+void start(bool disable, bool console);
+void write(const std::string &str);
 void close();
 
-void write_info(const std::string &str);
-void write(const std::string &str);
-
 #define LOG_INFO(name, fmt_str, ...)                                                                                                                   \
-  logger::write_info(                                                                                                                                  \
+  logger::write(                                                                                                                                       \
       fmt::format(                                                                                                                                     \
           "[" name "] [{}/INFO] "                                                                                                                      \
           "[{}:{}"                                                                                                                                     \
@@ -23,7 +21,7 @@ void write(const std::string &str);
   )
 
 #define LOG_WARN(name, fmt_str, ...)                                                                                                                   \
-  logger::write_info(                                                                                                                                  \
+  logger::write(                                                                                                                                       \
       fmt::format(                                                                                                                                     \
           "[" name "] [{}/WARN] "                                                                                                                      \
           "[{}:{}"                                                                                                                                     \

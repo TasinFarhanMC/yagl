@@ -20,9 +20,9 @@ Path expand_path(std::string const &input) {
 };
 
 int main(int argc, const char **argv) {
-
   bool show_help = false;
   bool console = false;
+  bool disable_log = false;
 
 #ifdef __linux__
   bin_path = fs::read_symlink("/proc/self/exe").parent_path();
@@ -44,7 +44,8 @@ int main(int argc, const char **argv) {
             ["-p"]["--program"]("Path to program pathectory or %bin to use binary path")
         | lyra::opt([](String const& s) { runtime_path = expand_path(s); }, "path")
             ["-r"]["--runtime"]("Path to runtime pathectory or %bin to use binary path")
-        | lyra::opt(console)["-c"]["--console"]("Print log to console");
+        | lyra::opt(console)["-c"]["--console"]("Print log to console")
+        | lyra::opt(disable_log)["-n"]["--no-log"]("Disable logging");
   // clang-format on
 
   lyra::parse_result result = cli.parse({argc, argv});
@@ -89,7 +90,7 @@ int main(int argc, const char **argv) {
   }
 
   try {
-    logger::start(console);
+    logger::start(disable_log, console);
   } catch (const std::exception &e) {
     LOG_FALLBACK("Init", "Logger initialization failed: {}", e.what());
     return 1;
