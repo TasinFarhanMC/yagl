@@ -4,6 +4,7 @@
 #include <betr/filesystem.hpp>
 #include <filesystem>
 #include <fmt/base.h>
+#include <glad/gl.h>
 #include <graphics/shader.hpp>
 #include <iostream>
 #include <logger.hpp>
@@ -18,7 +19,7 @@ Path bin_path;
 Path expand_path(std::string const &input) {
   if (input == "%bin") return bin_path;
   return Path(input);
-};
+}
 
 int main(int argc, const char **argv) {
   bool show_help = false;
@@ -87,6 +88,29 @@ int main(int argc, const char **argv) {
 
   glfwSetErrorCallback([](int error, const char *desc) { LOG_ERROR("Window", "GLFW Error ({}): {}", error, desc); });
   if (!glfwInit()) { return 1; }
+
+  glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+
+  /* optional but recommended */
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+  /* create dummy window */
+  GLFWwindow *window = glfwCreateWindow(1, 1, "gl", nullptr, nullptr);
+  if (!window) {
+    LOG_ERROR("Window", "Failed to create GLFW context");
+    glfwTerminate();
+    return 1;
+  }
+
+  glfwMakeContextCurrent(window);
+
+  /* load GL functions */
+  if (!gladLoadGL(glfwGetProcAddress)) {
+    LOG_ERROR("GL", "Failed to initialize GLAD");
+    return 1;
+  }
 
   if (!shader::init()) { return 1; }
 
