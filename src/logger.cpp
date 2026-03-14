@@ -34,35 +34,48 @@ std::string current_time() {
   return ss.str();
 }
 
-void start(bool disable, bool console) {
+bool start(bool disable, bool console) {
   ::console = console;
   ::disable = disable;
-  if (disable) return;
+  if (disable) return true;
 
-  log_path = get_log_path() / "latest.log";
-  file.open(log_path, std::ios::out | std::ios::trunc);
+  std::error_code ec;
+  fs::create_directory(get_log_path(), ec);
+  if (ec) {
+    LOG_FALLBACK("Init", "Failed to create log directory `{}`: {}", get_log_path().string(), ec.message());
+    return 1;
+  }
 
-  using namespace std::chrono;
-  auto now = system_clock::now();
-  std::time_t now_c = system_clock::to_time_t(now);
+  try {
+    log_path = get_log_path() / "latest.log";
+    file.open(log_path, std::ios::out | std::ios::trunc);
 
-  std::tm local_tm {};
-  local_tm = *std::localtime(&now_c);
+    using namespace std::chrono;
+    auto now = system_clock::now();
+    std::time_t now_c = system_clock::to_time_t(now);
 
-  std::ostringstream ss;
-  ss << std::put_time(&local_tm, "%Y-%m-%d_%H-%M-%S") << ".zip";
-  zip_path = get_log_path() / ss.str();
+    std::tm local_tm {};
+    local_tm = *std::localtime(&now_c);
+
+    std::ostringstream ss;
+    ss << std::put_time(&local_tm, "%Y-%m-%d_%H-%M-%S") << ".zip";
+    zip_path = get_log_path() / ss.str();
+    return true;
+  } catch (const std::exception &e) {
+    LOG_FALLBACK("Init", "Logger initialization failed: {}", e.what());
+    return false;
+  }
 }
 
 void write(const std::string &str) {
-  if (disable) return;
+  if (disable) { return; }
 
   std::cout << str;
   file << str;
 }
 
 void close() {
-  if (disable) return;
+  if (disable) { return; }
 
   LOG_INFO("Logger", "Saving latest.log to `{}`", zip_path.string());
 

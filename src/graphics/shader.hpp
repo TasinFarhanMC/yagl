@@ -4,4 +4,7 @@
 
 namespace shader {
 const betr::Array<betr::String, count> list;
-}
+
+bool init();
+void clean();
+} // namespace shader

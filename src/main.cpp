@@ -71,50 +71,30 @@ int main(int argc, const char **argv) {
   }
 
   std::error_code ec;
-
-  fs::create_directories(get_log_path(), ec);
+  fs::create_directories(get_runtime_path(), ec);
   if (ec) {
     LOG_FALLBACK("Init", "Failed to create runtime directory `{}`: {}", get_runtime_path().string(), ec.message());
     return 1;
   }
 
-  fs::create_directory(get_log_path(), ec);
-  if (ec) {
-    LOG_FALLBACK("Init", "Failed to create log directory `{}`: {}", get_log_path().string(), ec.message());
-    return 1;
-  }
-
-  fs::create_directory(get_shader_cache(), ec);
-  if (ec) {
-    LOG_FALLBACK("Init", "Failed to create shader cache `{}`: {}", get_shader_cache().string(), ec.message());
-    return 1;
-  }
-
-  try {
-    logger::start(disable_log, console);
-  } catch (const std::exception &e) {
-    LOG_FALLBACK("Init", "Logger initialization failed: {}", e.what());
-    return 1;
-  }
+  if (!logger::start(disable_log, console)) { return 1; }
 
   LOG_INFO("Logger", "Logger Initialized");
-  LOG_INFO("Init", "Parsed Arguments, program: {}, runtime: {}, console: {}", get_program_path().string(), get_runtime_path().string(), console);
+  LOG_INFO(
+      "Init", "Parsed Arguments, program: {}, runtime: {}, console: {}, disable_log: {}", get_program_path().string(), get_runtime_path().string(),
+      console, disable_log
+  );
 
   glfwSetErrorCallback([](int error, const char *desc) { LOG_ERROR("Window", "GLFW Error ({}): {}", error, desc); });
   if (!glfwInit()) { return 1; }
 
-  std::cout << "Total Shaders: " << shader::count << "\n";
-  std::cout << "---------------------------\n";
+  if (!shader::init()) { return 1; }
 
-  for (int i = 0; i < shader::count; ++i) { std::cout << "Shader ID " << i << " path: " << shader::list[i] << "\n"; }
-
-  // You can also still use the names directly
-  std::cout << "---------------------------\n";
-  std::cout << "Direct access (Blur ID " << shader::TEST_SHADER << "): " << shader::list[shader::TEST_SHADER] << "\n";
-
+  shader::clean();
   glfwTerminate();
 
   LOG_INFO("Init", "Completed Cleanup, Saving log and exiting");
   logger::close();
+
   return 0;
 }
