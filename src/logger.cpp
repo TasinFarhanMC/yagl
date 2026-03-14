@@ -15,7 +15,9 @@ using namespace logger;
 
 static std::ofstream file;
 static bool console = false;
+static bool disable = false;
 static Path log_path;
+static Path zip_path;
 
 namespace logger {
 
@@ -32,23 +34,14 @@ std::string current_time() {
   return ss.str();
 }
 
-void start(bool console) {
+void start(bool disable, bool console) {
   ::console = console;
+  ::disable = disable;
+  if (disable) return;
+
   log_path = get_log_path() / "latest.log";
   file.open(log_path, std::ios::out | std::ios::trunc);
-}
 
-void write_info(const std::string &str) {
-  if (console) std::cout << str;
-  file << str;
-}
-
-void write(const std::string &str) {
-  std::cout << str;
-  file << str;
-}
-
-void close() {
   using namespace std::chrono;
   auto now = system_clock::now();
   std::time_t now_c = system_clock::to_time_t(now);
@@ -58,7 +51,18 @@ void close() {
 
   std::ostringstream ss;
   ss << std::put_time(&local_tm, "%Y-%m-%d_%H-%M-%S") << ".zip";
-  const Path zip_path = get_log_path() / ss.str();
+  zip_path = get_log_path() / ss.str();
+}
+
+void write(const std::string &str) {
+  if (disable) return;
+
+  std::cout << str;
+  file << str;
+}
+
+void close() {
+  if (disable) return;
 
   LOG_INFO("Logger", "Saving latest.log to `{}`", zip_path.string());
 
