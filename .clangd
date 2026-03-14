@@ -1,3 +1,3 @@
 CompileFlags:
   CompilationDatabase: build/debug
-  Add: [-DYAGL_SRC_DIR="src"]
+  Add: [-DYAGL_SRC_PATH="src"]

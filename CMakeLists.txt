@@ -5,13 +5,24 @@ project(YAGL C CXX)
 cmake_policy(SET CMP0072 NEW)
 find_package(OpenGL REQUIRED)
 
+set(CPM_USE_LOCAL_PACKAGES
+    ON
+    CACHE BOOL "")
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_cpm.cmake)
-cpmaddpackage(URI "gh:glfw/glfw#3.4" OPTIONS "GLM_ENABLE_SIMD_SSE4_2 ON")
+
 cpmaddpackage("gh:g-truc/glm#1.0.3")
 cpmaddpackage("gh:nothings/stb#master")
 cpmaddpackage("gh:fmtlib/fmt#12.1.0")
 cpmaddpackage("gh:bfgroup/lyra#1.7.0")
+cpmaddpackage("gh:richgel999/miniz#3.1.1")
 cpmaddpackage("gh:tasinfarhanmc/betr@0.1.0")
+
+find_package(glfw3 QUIET)
+
+if(NOT glfw3_FOUND)
+  message(STATUS "GLFW not found locally, downloading...")
+  cpmaddpackage("gh:glfw/glfw#3.4")
+endif()
 
 # cpmaddpackage( NAME Imgui GIT_REPOSITORY "https://github.com/ocornut/imgui"
 # VERSION 1.92.1 DOWNLOAD_ONLY)
@@ -35,6 +46,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(yagl "${SRC_FILES}")
 target_include_directories(yagl PRIVATE ${INCLUDE_DIRS} ${stb_SOURCE_DIR})
-target_link_libraries(yagl PRIVATE OpenGL::GL glm glfw fmt lyra betr)
+target_link_libraries(
+  yagl
+  PRIVATE OpenGL::GL
+          glm
+          glfw
+          fmt
+          lyra
+          betr
+          miniz)
 target_compile_definitions(yagl PRIVATE GLFW_INCLUDE_NONE
-                                        YAGL_SRC_DIR="${SRC_DIR}/")
+                                        YAGL_SRC_PATH="${SRC_DIR}")
