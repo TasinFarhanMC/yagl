@@ -12,8 +12,11 @@
 #include <lyra/lyra.hpp>
 #include <meta.hpp>
 
+namespace meta {
 Path program_path = fs::current_path();
 Path runtime_path = fs::current_path();
+} // namespace meta
+
 Path bin_path;
 
 Path expand_path(std::string const &input) {
@@ -42,9 +45,9 @@ int main(int argc, const char **argv) {
 
   // clang-format off
   lyra::cli cli = lyra::help(show_help)
-        | lyra::opt([](String const& s) { program_path = expand_path(s); }, "path")
+        | lyra::opt([](String const& s) { meta::program_path = expand_path(s); }, "path")
             ["-p"]["--program"]("Path to program pathectory or %bin to use binary path")
-        | lyra::opt([](String const& s) { runtime_path = expand_path(s); }, "path")
+        | lyra::opt([](String const& s) { meta::runtime_path = expand_path(s); }, "path")
             ["-r"]["--runtime"]("Path to runtime pathectory or %bin to use binary path")
         | lyra::opt(console)["-c"]["--console"]("Print log to console")
         | lyra::opt(disable_log)["-n"]["--no-log"]("Disable logging");
@@ -64,8 +67,8 @@ int main(int argc, const char **argv) {
   }
 
   try {
-    program_path = fs::canonical(program_path);
-    runtime_path = fs::weakly_canonical(runtime_path);
+    meta::program_path = fs::canonical(meta::program_path);
+    meta::runtime_path = fs::weakly_canonical(meta::runtime_path);
   } catch (const fs::filesystem_error &e) {
     std::cerr << e.what() << std::endl;
     return 1;
@@ -89,15 +92,12 @@ int main(int argc, const char **argv) {
   glfwSetErrorCallback([](int error, const char *desc) { LOG_ERROR("Window", "GLFW Error ({}): {}", error, desc); });
   if (!glfwInit()) { return 1; }
 
-  glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-
-  /* optional but recommended */
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-  /* create dummy window */
-  GLFWwindow *window = glfwCreateWindow(1, 1, "gl", nullptr, nullptr);
+  glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+  GLFWwindow *window = glfwCreateWindow(1, 1, meta::name.c_str(), nullptr, nullptr);
   if (!window) {
     LOG_ERROR("Window", "Failed to create GLFW context");
     glfwTerminate();
@@ -106,7 +106,6 @@ int main(int argc, const char **argv) {
 
   glfwMakeContextCurrent(window);
 
-  /* load GL functions */
   if (!gladLoadGL(glfwGetProcAddress)) {
     LOG_ERROR("GL", "Failed to initialize GLAD");
     return 1;
