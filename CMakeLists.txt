@@ -16,13 +16,8 @@ cpmaddpackage("gh:fmtlib/fmt#12.1.0")
 cpmaddpackage("gh:bfgroup/lyra#1.7.0")
 cpmaddpackage("gh:richgel999/miniz#3.1.1")
 cpmaddpackage("gh:tasinfarhanmc/betr@0.1.0")
-
-find_package(glfw3 QUIET)
-
-if(NOT glfw3_FOUND)
-  message(STATUS "GLFW not found locally, downloading...")
-  cpmaddpackage("gh:glfw/glfw#3.4")
-endif()
+cpmaddpackage(NAME glfw3 GIT_REPOSITORY "https://github.com/glfw/glfw.git"
+              GIT_TAG "3.4")
 
 # cpmaddpackage( NAME Imgui GIT_REPOSITORY "https://github.com/ocornut/imgui"
 # VERSION 1.92.1 DOWNLOAD_ONLY)
