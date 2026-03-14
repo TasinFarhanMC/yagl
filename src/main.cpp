@@ -4,6 +4,7 @@
 #include <betr/filesystem.hpp>
 #include <filesystem>
 #include <fmt/base.h>
+#include <graphics/shader.hpp>
 #include <iostream>
 #include <logger.hpp>
 #include <lyra/exe_name.hpp>
@@ -101,6 +102,15 @@ int main(int argc, const char **argv) {
 
   glfwSetErrorCallback([](int error, const char *desc) { LOG_ERROR("Window", "GLFW Error ({}): {}", error, desc); });
   if (!glfwInit()) { return 1; }
+
+  std::cout << "Total Shaders: " << shader::count << "\n";
+  std::cout << "---------------------------\n";
+
+  for (int i = 0; i < shader::count; ++i) { std::cout << "Shader ID " << i << " path: " << shader::list[i] << "\n"; }
+
+  // You can also still use the names directly
+  std::cout << "---------------------------\n";
+  std::cout << "Direct access (Blur ID " << shader::TEST_SHADER << "): " << shader::list[shader::TEST_SHADER] << "\n";
 
   glfwTerminate();
 
