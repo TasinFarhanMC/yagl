@@ -9,7 +9,7 @@ inline constexpr int base_index = __COUNTER__;
   inline constexpr int name = __COUNTER__ - shader::base_index - 1;                                                                                    \
   inline constexpr const char *get_shader_path_by_id(std::integral_constant<int, name>) { return path; }
 
-DEFINE_SHADER(TEST_SHADER, "path");
+DEFINE_SHADER(rect, "rect");
 
 inline constexpr int count = __COUNTER__ - 1 - base_index;
 } // namespace shader
