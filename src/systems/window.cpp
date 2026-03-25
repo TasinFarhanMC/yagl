@@ -2,8 +2,8 @@
 
 #include <clay.hpp>
 #include <glad/gl.h>
-#include <logger.hpp>
 #include <meta.hpp>
+#include <systems/logger.hpp>
 
 namespace glfw {
 

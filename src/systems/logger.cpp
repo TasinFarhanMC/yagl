@@ -35,16 +35,16 @@ std::string current_time() {
   return ss.str();
 }
 
-bool start(bool disable, bool console) {
+Guard init(bool disable, bool console) {
   ::console = console;
   ::disable = disable;
-  if (disable) return true;
+  if (disable) { return Guard {true}; };
 
   std::error_code ec;
   fs::create_directory(get_log_path(), ec);
   if (ec) {
     LOG_FALLBACK("Init", "Failed to create log directory `{}`: {}", get_log_path().string(), ec.message());
-    return 1;
+    return Guard {false};
   }
 
   try {
@@ -61,10 +61,10 @@ bool start(bool disable, bool console) {
     std::ostringstream ss;
     ss << std::put_time(&local_tm, "%Y-%m-%d_%H-%M-%S") << ".zip";
     zip_path = get_log_path() / ss.str();
-    return true;
+    return Guard {true};
   } catch (const std::exception &e) {
     LOG_FALLBACK("Init", "Logger initialization failed: {}", e.what());
-    return false;
+    return Guard {false};
   }
 }
 
@@ -86,6 +86,7 @@ void close() {
 
   LOG_INFO("Logger", "Saving latest.log to `{}`", zip_path.string());
 
+  flush();
   file.close();
   if (file.fail()) { LOG_FALLBACK("Logger", "Failed to close log file `{}`", log_path.string()); }
 

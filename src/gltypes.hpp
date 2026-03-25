@@ -2,7 +2,7 @@
 
 #include <glad/gl.h>
 #include <initializer_list>
-#include <logger.hpp>
+#include <systems/logger.hpp>
 
 namespace gl {
 template <typename T> class Buffer {

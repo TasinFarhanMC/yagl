@@ -8,11 +8,11 @@
 #include <glad/gl.h>
 #include <graphics/shader.hpp>
 #include <iostream>
-#include <logger.hpp>
 #include <lyra/lyra.hpp>
 #include <math.hpp>
 #include <meta.hpp>
 #include <rect.hpp>
+#include <systems/logger.hpp>
 #include <systems/window.hpp>
 
 namespace meta {
@@ -113,13 +113,13 @@ int main(int argc, const char **argv) {
     return 1;
   }
 
-  if (!logger::start(disable_log, console)) { return 1; }
-  const logger::LogGuard log_guard;
+  logger::Guard log_guard = logger::init(disable_log, console);
+  if (!log_guard) { return 1; }
 
   LOG_INFO("Logger", "Logger Initialized");
 
   GLFWwindow *window;
-  const glfw::Guard glfw_guard = glfw::init(window_size, window_frac, window);
+  glfw::Guard glfw_guard = glfw::init(window_size, window_frac, window);
   if (!glfw_guard) { return 1; }
 
   LOG_INFO(
