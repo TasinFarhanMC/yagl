@@ -18,7 +18,9 @@ void init(const uvec2 &window_dim) {
       {[](Clay_ErrorData error) {
          switch (error.errorType) {
          case CLAY_ERROR_TYPE_ELEMENTS_CAPACITY_EXCEEDED: Clay_SetMaxElementCount(Clay_GetMaxElementCount() * 2); break;
-         case CLAY_ERROR_TYPE_TEXT_MEASUREMENT_CAPACITY_EXCEEDED: Clay_SetMaxMeasureTextCacheWordCount(Clay_GetMaxMeasureTextCacheWordCount() * 2); break;
+         case CLAY_ERROR_TYPE_TEXT_MEASUREMENT_CAPACITY_EXCEEDED:
+           Clay_SetMaxMeasureTextCacheWordCount(Clay_GetMaxMeasureTextCacheWordCount() * 2);
+           break;
          default: LOG_ERROR("UI/Clay", "{}", error.errorText.chars); return;
          }
 
@@ -34,7 +36,12 @@ void init(const uvec2 &window_dim) {
       },
       nullptr
   );
+
+  LOG_INFO("UI", "Clay Initialized");
 }
 
-void clean() { clay_data.clear(); }
+void clean() {
+  clay_data.clear();
+  LOG_INFO("UI", "Completed Clay Cleanup");
+}
 } // namespace clay

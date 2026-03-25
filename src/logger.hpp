@@ -1,5 +1,5 @@
 #pragma once
-#include <fmt/core.h>
+#include <fmt/format.h>
 
 #define __REL_FILE__ (static_cast<const char *>(__FILE__) + sizeof(YAGL_SRC_PATH))
 
@@ -47,4 +47,11 @@ void close();
       "]: " fmt_str,                                                                                                                                   \
       logger::current_time(), __REL_FILE__, __LINE__, ##__VA_ARGS__                                                                                    \
   )
+
+struct LogGuard {
+  ~LogGuard() {
+    logger::flush();
+    logger::close();
+  }
+};
 } // namespace logger

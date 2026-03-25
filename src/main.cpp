@@ -7,7 +7,6 @@
 #include <betr/filesystem.hpp>
 #include <betr/vector.hpp>
 #include <clay.hpp>
-#include <fmt/base.h>
 #include <glad/gl.h>
 #include <graphics/shader.hpp>
 #include <iostream>
@@ -46,12 +45,12 @@ int main(int argc, const char **argv) {
 #include <mach-o/dyld.h>
   char buf[PATH_MAX];
   uint32_t size = sizeof(buf);
-  if (_NSGetExecutablePath(buf, &size) == 0) { Path bin_path = Path(buf).parent_path(); }
+  if (_NSGetExecutablePath(buf, &size) == 0) { bin_path = Path(buf).parent_path(); }
 #elif defined(_WIN32)
 #include <windows.h>
   char buf[MAX_PATH];
   GetModuleFileNameA(NULL, buf, MAX_PATH);
-  Path bin_path = Path(buf).parent_path();
+  bin_path = Path(buf).parent_path();
 #endif
   try {
     // clang-format off
@@ -83,7 +82,7 @@ int main(int argc, const char **argv) {
         | lyra::opt(disable_log)["-n"]["--no-log"]("Disable logging");
     // clang-format on
   } catch (const std::exception &e) {
-    LOG_ERROR("Init/CLI", "Unable to Parse Arguments: {}", e.what());
+    std::cerr << "Unable to Parse Arguments: " << e.what() << std::endl;
     return 1;
   }
 
@@ -116,6 +115,8 @@ int main(int argc, const char **argv) {
   }
 
   if (!logger::start(disable_log, console)) { return 1; }
+  const logger::LogGuard log_guard;
+
   LOG_INFO("Logger", "Logger Initialized");
 
   glfwSetErrorCallback([](int error, const char *desc) { LOG_ERROR("Window", "GLFW Error ({}): {}", error, desc); });
@@ -184,18 +185,18 @@ int main(int argc, const char **argv) {
     renderer::rect::render(rects);
     glfwSwapBuffers(window);
 
-    while (passed_time > meta::TICK_TIME) {
-      if (glfwGetKey(window, GLFW_KEY_ESCAPE)) { glfwSetWindowShouldClose(window, true); }
-      logger::flush();
-
-      passed_time -= meta::TICK_TIME;
-    }
-
     end = HighResClock::now();
     const HighResClock::duration delta = end - start;
     start = end;
     passed_time += delta;
     delta_time = Duration<float>(delta).count();
+
+    while (passed_time >= meta::TICK_TIME) {
+      if (glfwGetKey(window, GLFW_KEY_ESCAPE)) { glfwSetWindowShouldClose(window, true); }
+      logger::flush();
+
+      passed_time -= meta::TICK_TIME;
+    }
   }
 
   renderer::rect::clean();
@@ -204,8 +205,5 @@ int main(int argc, const char **argv) {
   glfwTerminate();
 
   LOG_INFO("Init", "Completed Cleanup, Saving log and exiting");
-  logger::flush();
-  logger::close();
-
   return 0;
 }

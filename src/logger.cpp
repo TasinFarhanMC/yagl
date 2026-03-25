@@ -69,7 +69,7 @@ bool start(bool disable, bool console) {
 }
 
 void flush() {
-  if (disable) { return; }
+  if (disable || buffer.size() == 0) { return; }
   if (console) { std::cout.write(buffer.data(), buffer.size()); }
   file.write(buffer.data(), buffer.size());
   buffer.clear();
