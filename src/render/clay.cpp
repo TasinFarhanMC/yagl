@@ -14,16 +14,6 @@ static Clay_Arena arena;
 static clay::Guard init_renderers();
 static void clean_renderers();
 
-struct RectVertex {
-  Clay_BoundingBox bounding_box;
-  u8vec4 color;
-};
-
-static gl::Buffer<RectVertex> rect_vertex(GL_ARRAY_BUFFER);
-static gl::Array<vec2> rect_base(GL_ARRAY_BUFFER);
-static gl::VertexArray rect_vao;
-static vec2 layout;
-
 struct ClayUBO {
   vec2 space;
 };
@@ -33,6 +23,16 @@ static gl::UniformBuffer<ClayUBO> clay_ubo(0);
 static vec2 frame_size(1.0f);
 static float scale = 1.0f;
 static vec2 dpi(1.0f);
+
+struct RectVertex {
+  Clay_BoundingBox bounding_box;
+  u8vec4 color;
+};
+
+static gl::Buffer<RectVertex> rect_vertex(GL_ARRAY_BUFFER);
+static gl::Array<vec2> rect_base(GL_ARRAY_BUFFER);
+static gl::VertexArray rect_vao;
+static vec2 layout;
 
 namespace clay {
 void update_viewport(vec2 size) {
@@ -124,8 +124,8 @@ void render(const Clay_RenderCommandArray &cmds, const vec2 &draw_size) {
     case CLAY_RENDER_COMMAND_TYPE_RECTANGLE:
       rect_ptr[rect_count++] = {cmd.boundingBox, clay_col_to_u8(cmd.renderData.rectangle.backgroundColor)};
       break;
-    case CLAY_RENDER_COMMAND_TYPE_NONE:
     case CLAY_RENDER_COMMAND_TYPE_BORDER:
+    case CLAY_RENDER_COMMAND_TYPE_NONE:
     case CLAY_RENDER_COMMAND_TYPE_TEXT:
     case CLAY_RENDER_COMMAND_TYPE_IMAGE:
     case CLAY_RENDER_COMMAND_TYPE_SCISSOR_START:
@@ -169,7 +169,8 @@ static clay::Guard init_renderers() {
 }
 
 static void clean_renderers() {
-  rect_vao.destroy();
-  rect_base.destroy();
+  clay_ubo.destroy();
   rect_vertex.destroy();
+  rect_base.destroy();
+  rect_vao.destroy();
 }
