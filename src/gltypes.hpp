@@ -17,7 +17,7 @@ public:
     }
   }
 
-  operator GLuint() const noexcept { return this->id; }
+  operator GLuint() const { return this->id; }
 
   void init(const std::initializer_list<T> data = {}) {
     glGenBuffers(1, &id);
@@ -58,7 +58,7 @@ public:
     }
   }
 
-  operator GLuint() const noexcept { return this->id; }
+  operator GLuint() const { return this->id; }
 
   void init(const std::initializer_list<T> data) {
     glGenBuffers(1, &id);
@@ -97,21 +97,21 @@ public:
 
   void bind() { glBindVertexArray(id); }
 
-  void add_attrib(GLuint buffer, GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *offset) const noexcept {
+  void add_attrib(GLuint buffer, GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *offset) const {
     glBindBuffer(GL_ARRAY_BUFFER, buffer);
     glVertexAttribPointer(index, size, type, normalized, stride, offset);
     glEnableVertexAttribArray(index);
   }
 
-  void add_iattrib(GLuint buffer, GLuint index, GLint size, GLenum type, GLsizei stride, const void *offset) const noexcept {
+  void add_iattrib(GLuint buffer, GLuint index, GLint size, GLenum type, GLsizei stride, const void *offset) const {
     glBindBuffer(GL_ARRAY_BUFFER, buffer);
     glVertexAttribIPointer(index, size, type, stride, offset);
     glEnableVertexAttribArray(index);
   }
 
-  void set_divisor(GLuint index, GLuint divisor) const noexcept { glVertexAttribDivisor(index, divisor); }
+  void set_divisor(GLuint index, GLuint divisor) const { glVertexAttribDivisor(index, divisor); }
 
-  operator GLuint() const noexcept { return id; }
+  operator GLuint() const { return id; }
 
   void destroy() {
     if (id) {

@@ -30,7 +30,7 @@ Path expand_path(std::string const &input) {
 uvec2 window_size = {0, 0};
 float ui_scale = 1;
 
-int main(int argc, const char **argv) {
+int main(int argc, const char **argv) noexcept {
   bool show_help = false;
   bool console = false;
   bool disable_log = false;
@@ -113,7 +113,7 @@ int main(int argc, const char **argv) {
     return 1;
   }
 
-  const logger::Guard log_guard = logger::init(disable_log, console);
+  const logger::Guard log_guard = logger::start(disable_log, console);
   if (!log_guard) { return 1; }
 
   LOG_INFO("Logger", "Logger Initialized");
@@ -127,7 +127,8 @@ int main(int argc, const char **argv) {
       get_runtime_path().string(), window_size.x, window_size.y, console, disable_log
   );
 
-  if (!shader::init()) { return 1; }
+  const shader::Guard shader_guard = shader::init();
+  if (!shader_guard) { return 1; }
 
   const clay::Guard clay_guard = clay::init(window_size);
 
@@ -166,7 +167,6 @@ int main(int argc, const char **argv) {
   }
 
   renderer::rect::clean();
-  shader::clean();
 
   return 0;
 }

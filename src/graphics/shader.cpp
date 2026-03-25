@@ -36,12 +36,12 @@ static bool check_shader(GLuint shader, const String &type, const String &base, 
 namespace shader {
 Array<unsigned, count> programs;
 
-bool init() {
+Guard init() {
   std::error_code ec;
   fs::create_directory(get_shader_cache(), ec);
   if (ec) {
     LOG_FALLBACK("Init", "Failed to create shader cache `{}`: {}", get_shader_cache().string(), ec.message());
-    return false;
+    return Guard {false};
   }
 
   LOG_INFO("Shader", "Validated shader cache directory `{}`", get_shader_cache().string());
@@ -51,7 +51,7 @@ bool init() {
     const Path cache = get_shader_cache() / link;
 
     GLuint program = glCreateProgram();
-    bool cache_hit = false;
+    bool cache_hit = Guard {false};
 
     if (!fs::exists(cache)) {
       LOG_INFO("Shader", "Cache not found for [{}] compiling instead", link);
@@ -108,13 +108,13 @@ bool init() {
     if (vert_src.empty()) {
       LOG_ERROR("Shader", "Failed to read vertex shader [{}] -> `{}`", link, vert.string());
       glDeleteProgram(program);
-      return false;
+      return Guard {false};
     }
 
     if (frag_src.empty()) {
       LOG_ERROR("Shader", "Failed to read fragment shader [{}] -> `{}`", link, frag.string());
       glDeleteProgram(program);
-      return false;
+      return Guard {false};
     }
 
     GLuint vs = glCreateShader(GL_VERTEX_SHADER);
@@ -133,7 +133,7 @@ bool init() {
       glDeleteShader(vs);
       glDeleteShader(fs);
       glDeleteProgram(program);
-      return false;
+      return Guard {false};
     }
 
     glAttachShader(program, vs);
@@ -160,7 +160,7 @@ bool init() {
 
       LOG_ERROR("Shader", "Link error [{}]:\n{}", link, log);
       glDeleteProgram(program);
-      return false;
+      return Guard {false};
     }
 
     LOG_INFO("Shader", "Compiled and loaded [{}]", link);
@@ -179,7 +179,7 @@ bool init() {
     }
   }
 
-  return true;
+  return Guard {true};
 }
 
 void clean() {

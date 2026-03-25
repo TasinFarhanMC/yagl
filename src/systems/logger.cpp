@@ -35,7 +35,7 @@ std::string current_time() {
   return ss.str();
 }
 
-Guard init(bool disable, bool console) {
+Guard start(bool disable, bool console) {
   ::console = console;
   ::disable = disable;
   if (disable) { return Guard {true}; };
