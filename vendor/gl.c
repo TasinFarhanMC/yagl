@@ -35,8 +35,8 @@ int GLAD_GL_VERSION_3_0 = 0;
 int GLAD_GL_VERSION_3_1 = 0;
 int GLAD_GL_VERSION_3_2 = 0;
 int GLAD_GL_VERSION_3_3 = 0;
-int GLAD_GL_ARB_explicit_uniform_location = 0;
 int GLAD_GL_ARB_get_program_binary = 0;
+int GLAD_GL_ARB_shading_language_420pack = 0;
 int GLAD_GL_ARB_texture_storage = 0;
 
 
@@ -883,8 +883,8 @@ static int glad_gl_find_extensions_gl(void) {
     char **exts_i = NULL;
     if (!glad_gl_get_extensions(&exts, &exts_i)) return 0;
 
-    GLAD_GL_ARB_explicit_uniform_location = glad_gl_has_extension(exts, exts_i, "GL_ARB_explicit_uniform_location");
     GLAD_GL_ARB_get_program_binary = glad_gl_has_extension(exts, exts_i, "GL_ARB_get_program_binary");
+    GLAD_GL_ARB_shading_language_420pack = glad_gl_has_extension(exts, exts_i, "GL_ARB_shading_language_420pack");
     GLAD_GL_ARB_texture_storage = glad_gl_has_extension(exts, exts_i, "GL_ARB_texture_storage");
 
     glad_gl_free_extensions(exts_i);
