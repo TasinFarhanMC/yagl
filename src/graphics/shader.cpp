@@ -53,9 +53,30 @@ Guard init() {
     GLuint program = glCreateProgram();
     bool cache_hit = Guard {false};
 
+    const Path base = get_shader_path() / link;
+
+    Path vert = base;
+    vert.replace_extension(".vert.glsl");
+
+    Path frag = base;
+    frag.replace_extension(".frag.glsl");
+
     if (!fs::exists(cache)) {
       LOG_INFO("Shader", "Cache not found for [{}] compiling instead", link);
       goto CACHE_MISS;
+    }
+
+    {
+      auto cache_time = fs::last_write_time(cache);
+      bool out_of_date = false;
+
+      if (fs::exists(vert) && fs::last_write_time(vert) > cache_time) out_of_date = true;
+      if (fs::exists(frag) && fs::last_write_time(frag) > cache_time) out_of_date = true;
+
+      if (out_of_date) {
+        LOG_WARN("Shader", "Source changed for [{}] re-compiling", link);
+        goto CACHE_MISS;
+      }
     }
 
     {
@@ -94,14 +115,6 @@ Guard init() {
     }
 
   CACHE_MISS:
-    const Path base = get_shader_path() / link;
-
-    Path vert = base;
-    vert.replace_extension(".vert.glsl");
-
-    Path frag = base;
-    frag.replace_extension(".frag.glsl");
-
     const String vert_src = read_file(vert);
     const String frag_src = read_file(frag);
 

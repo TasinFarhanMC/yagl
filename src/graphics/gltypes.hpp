@@ -6,16 +6,11 @@
 
 namespace gl {
 template <typename T> class Buffer {
+  const GLenum type;
+  GLuint id = 0;
+
 public:
   Buffer(GLenum type) : type(type) {};
-
-  void destroy() {
-    if (id) {
-      glDeleteBuffers(1, &id);
-      LOG_INFO("Graphics/GL/Buffer", "Deleted buffer {}", id);
-      id = 0;
-    }
-  }
 
   operator GLuint() const { return this->id; }
 
@@ -26,37 +21,25 @@ public:
     LOG_INFO("Graphics/GL/Buffer", "Initialized buffer {} with {} elements", id, data.size());
   }
 
-  T *map() {
-    glBindBuffer(type, id);
-    return static_cast<T *>(glMapBuffer(type, GL_READ_WRITE));
+  void destroy() {
+    glDeleteBuffers(1, &id);
+    LOG_INFO("Graphics/GL/Buffer", "Deleted buffer {}", id);
   }
 
-  void unmap() {
-    glBindBuffer(type, id);
-    glUnmapBuffer(type);
-  }
+  void bind() { glBindBuffer(type, id); }
 
-  void update(const T *data, int size) {
-    glBindBuffer(type, id);
-    glBufferData(type, sizeof(T) * size, data, GL_DYNAMIC_DRAW);
-  }
+  T *map() { return static_cast<T *>(glMapBuffer(type, GL_READ_WRITE)); }
+  void unmap() { glUnmapBuffer(type); }
 
-private:
-  const GLenum type;
-  GLuint id = 0;
+  void update(const T *data, int size) { glBufferData(type, sizeof(T) * size, data, GL_DYNAMIC_DRAW); }
 };
 
 template <typename T> class Array {
+  const GLenum type;
+  GLuint id = 0;
+
 public:
   Array(GLenum type) : type(type) {};
-
-  void destroy() {
-    if (id) {
-      glDeleteBuffers(1, &id);
-      LOG_INFO("Graphics/GL/Array", "Deleted array buffer {}", id);
-      id = 0;
-    }
-  }
 
   operator GLuint() const { return this->id; }
 
@@ -67,27 +50,25 @@ public:
     LOG_INFO("Graphics/GL/Array", "Initialized array buffer {} with {} elements", id, data.size());
   }
 
-  T *map() {
-    glBindBuffer(type, id);
-    return static_cast<T *>(glMapBuffer(type, GL_READ_ONLY));
+  void destroy() {
+    glDeleteBuffers(1, &id);
+    LOG_INFO("Graphics/GL/Array", "Deleted array buffer {}", id);
   }
 
-  void unmap() {
-    glBindBuffer(type, id);
-    glUnmapBuffer(type);
-  }
+  void bind() { glBindBuffer(type, id); }
+
+  T *map() { return static_cast<T *>(glMapBuffer(type, GL_READ_ONLY)); }
+  void unmap() { glUnmapBuffer(type); }
 
   Array(Array &&) = delete;
   Array(const Array &) = delete;
   Array &operator=(Array &&) = delete;
   Array &operator=(const Array &) = delete;
-
-private:
-  const GLenum type;
-  GLuint id = 0;
 };
 
 class VertexArray {
+  GLuint id = 0;
+
 public:
   void init() {
     glGenVertexArrays(1, &id);
@@ -97,14 +78,12 @@ public:
 
   void bind() { glBindVertexArray(id); }
 
-  void add_attrib(GLuint buffer, GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *offset) const {
-    glBindBuffer(GL_ARRAY_BUFFER, buffer);
+  void add_attrib(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *offset) const {
     glVertexAttribPointer(index, size, type, normalized, stride, offset);
     glEnableVertexAttribArray(index);
   }
 
-  void add_iattrib(GLuint buffer, GLuint index, GLint size, GLenum type, GLsizei stride, const void *offset) const {
-    glBindBuffer(GL_ARRAY_BUFFER, buffer);
+  void add_iattrib(GLuint index, GLint size, GLenum type, GLsizei stride, const void *offset) const {
     glVertexAttribIPointer(index, size, type, stride, offset);
     glEnableVertexAttribArray(index);
   }
@@ -114,15 +93,9 @@ public:
   operator GLuint() const { return id; }
 
   void destroy() {
-    if (id) {
-      glDeleteVertexArrays(1, &id);
-      LOG_INFO("Graphics/GL/VAO", "Deleted VertexArray {}", id);
-      id = 0;
-    }
+    glDeleteVertexArrays(1, &id);
+    LOG_INFO("Graphics/GL/VAO", "Deleted VertexArray {}", id);
   }
-
-private:
-  GLuint id = 0;
 };
 
 template <typename T> class UniformBuffer {

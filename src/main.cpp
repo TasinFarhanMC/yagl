@@ -12,7 +12,6 @@
 #include <lyra/lyra.hpp>
 #include <math.hpp>
 #include <meta.hpp>
-#include <rect.hpp>
 #include <render/clay.hpp>
 #include <systems/logger.hpp>
 #include <systems/window.hpp>
@@ -57,9 +56,9 @@ int main(int argc, const char **argv) noexcept {
     // clang-format off
   cli |= lyra::help(show_help)
         | lyra::opt([](String const& s) { meta::program_path = expand_path(s); }, "path")
-            ["-p"]["--program"]("Path to program pathectory or %bin to use binary path")
+            ["-p"]["--program"]("Path to program directory or %bin to use binary path")
         | lyra::opt([](String const& s) { meta::runtime_path = expand_path(s); }, "path")
-            ["-r"]["--runtime"]("Path to runtime pathectory or %bin to use binary path")
+            ["-r"]["--runtime"]("Path to runtime directory or %bin to use binary path")
         | (lyra::group() 
           | lyra::opt([&](String const& s) { 
               if (!s.empty() && s.back() == '%') {
@@ -133,13 +132,7 @@ int main(int argc, const char **argv) noexcept {
   if (!shader_guard) { return 1; }
 
   const clay::Guard clay_guard = clay::init(window_size);
-
-  renderer::rect::init();
-
-  Vector<RectComp> rects = {
-      { 10,  10,  2,   2},
-      {300, 500, 20, 100}
-  };
+  if (!clay_guard) { return 1; }
 
   TimePoint<HighResClock> end;
   TimePoint<HighResClock> start = HighResClock::now();
@@ -166,8 +159,7 @@ int main(int argc, const char **argv) noexcept {
     // ui update
     glClear(GL_COLOR_BUFFER_BIT);
 
-    clay::render(clay_cmds);
-    renderer::rect::render(rects);
+    clay::render(clay_cmds, window_size);
 
     glfwSwapBuffers(window);
 
@@ -184,8 +176,6 @@ int main(int argc, const char **argv) noexcept {
       passed_time -= meta::TICK_TIME;
     }
   }
-
-  renderer::rect::clean();
 
   return 0;
 }
