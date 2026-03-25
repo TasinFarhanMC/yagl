@@ -1,7 +1,5 @@
-#include "rect.hpp"
 #include <betr/namespace.hpp>
 
-#include <GLFW/glfw3.h>
 #include <betr/chrono.hpp>
 #include <betr/def.hpp>
 #include <betr/filesystem.hpp>
@@ -11,10 +9,11 @@
 #include <graphics/shader.hpp>
 #include <iostream>
 #include <logger.hpp>
-#include <lyra/exe_name.hpp>
 #include <lyra/lyra.hpp>
 #include <math.hpp>
 #include <meta.hpp>
+#include <rect.hpp>
+#include <systems/window.hpp>
 
 namespace meta {
 Path program_path = fs::current_path();
@@ -28,7 +27,7 @@ Path expand_path(std::string const &input) {
   return Path(input);
 }
 
-uvec2 window_dim = {0, 0};
+uvec2 window_size = {0, 0};
 float ui_scale = 1;
 
 int main(int argc, const char **argv) {
@@ -63,19 +62,19 @@ int main(int argc, const char **argv) {
           | lyra::opt([&](String const& s) { 
               if (!s.empty() && s.back() == '%') {
                 window_frac.x = std::stof(s.substr(0, s.size() - 1)) / 100.0f;
-                window_dim.x = 0;
+                window_size.x = 0;
               } else {
                 window_frac.x = 0;
-                window_dim.x = std::stoi(s);
+                window_size.x = std::stoi(s);
               }
           }, "width")["-w"]["--width"]("Window Width, Use % for screen percentage").required()
           | lyra::opt([&](String const& s) { 
               if (!s.empty() && s.back() == '%') {
                 window_frac.y = std::stof(s.substr(0, s.size() - 1)) / 100.0f;
-                window_dim.y = 0;
+                window_size.y = 0;
               } else {
                 window_frac.y = 0;
-                window_dim.y = std::stoi(s);
+                window_size.y = std::stoi(s);
               }
           }, "height")["-h"]["--height"]("Window Height, Use % for screen percentage").required())
         | lyra::opt(console)["-c"]["--console"]("Print log to console")
@@ -119,51 +118,18 @@ int main(int argc, const char **argv) {
 
   LOG_INFO("Logger", "Logger Initialized");
 
-  glfwSetErrorCallback([](int error, const char *desc) { LOG_ERROR("Window", "GLFW Error ({}): {}", error, desc); });
-  if (!glfwInit()) { return 1; }
-
-  GLFWmonitor *const primary_monitor = glfwGetPrimaryMonitor();
-
-  const GLFWvidmode *const vidmode = glfwGetVideoMode(primary_monitor);
-  if (window_dim.x == 0) { window_dim.x = vidmode->width * window_frac.x; }
-  if (window_dim.y == 0) { window_dim.y = vidmode->height * window_frac.y; }
-
-  ivec2 monitor_pos;
-  glfwGetMonitorPos(primary_monitor, &monitor_pos.x, &monitor_pos.y);
+  GLFWwindow *window;
+  const glfw::Guard glfw_guard = glfw::init(window_size, window_frac, window);
+  if (!glfw_guard) { return 1; }
 
   LOG_INFO(
       "Init/CLI", "Parsed Arguments, program: {}, runtime: {}, width: {}, height: {}, console: {}, disable_log: {}", get_program_path().string(),
-      get_runtime_path().string(), window_dim.x, window_dim.y, console, disable_log
+      get_runtime_path().string(), window_size.x, window_size.y, console, disable_log
   );
-
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-  GLFWwindow *window = glfwCreateWindow(window_dim.x, window_dim.y, meta::name.c_str(), nullptr, nullptr);
-  if (!window) {
-    LOG_ERROR("Window", "Failed to create GLFW context");
-    glfwTerminate();
-    return 1;
-  }
-  glfwMakeContextCurrent(window);
-  glfwSetWindowPos(window, monitor_pos.x + (vidmode->width - window_dim.x) / 2, monitor_pos.y + (vidmode->height - window_dim.y) / 2);
-
-  glfwSetWindowSizeCallback(window, [](GLFWwindow *window, int width, int height) {
-    window_dim.x = width;
-    window_dim.y = height;
-
-    Clay_SetLayoutDimensions({width / ui_scale, height / ui_scale});
-  });
-
-  if (!gladLoadGL(glfwGetProcAddress)) {
-    LOG_ERROR("GL", "Failed to initialize GLAD");
-    return 1;
-  }
 
   if (!shader::init()) { return 1; }
 
-  clay::init(window_dim);
+  clay::init(window_size);
 
   renderer::rect::init();
 
@@ -202,8 +168,6 @@ int main(int argc, const char **argv) {
   renderer::rect::clean();
   clay::clean();
   shader::clean();
-  glfwTerminate();
 
-  LOG_INFO("Init", "Completed Cleanup, Saving log and exiting");
   return 0;
 }
