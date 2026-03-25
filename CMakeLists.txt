@@ -70,3 +70,4 @@ target_link_libraries(
           clay)
 target_compile_definitions(yagl PRIVATE GLFW_INCLUDE_NONE
                                         YAGL_SRC_PATH="${SRC_DIR}")
+target_precompile_headers(yagl PRIVATE "${SRC_DIR}/phc/phc.hpp")

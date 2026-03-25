@@ -1,3 +1,5 @@
+#pragma once
+
 #include "clay.h"
 #include <math.hpp>
 
@@ -12,4 +14,6 @@ struct Guard {
 };
 
 Guard init(const uvec2 &size);
+
+void render(const Clay_RenderCommandArray &cmds);
 } // namespace clay

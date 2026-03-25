@@ -1,4 +1,7 @@
+#include <phc/phc.hpp>
+
 #include "rect.hpp"
+
 #include "graphics/shader.hpp"
 #include "math.hpp"
 #include <gltypes.hpp>
@@ -28,7 +31,7 @@ namespace rect {
     vao.add_attrib(vertex, 1, 2, GL_FLOAT, GL_FALSE, sizeof(RectComp), (void *)offsetof(RectComp, pos));
     vao.set_divisor(1, 1); // Tell GL this attribute advances once per instance
 
-    vao.add_iattrib(vertex, 2, 2, GL_UNSIGNED_BYTE, sizeof(RectComp), (void *)offsetof(RectComp, scale));
+    vao.add_iattrib(vertex, 2, 2, GL_UNSIGNED_INT, sizeof(RectComp), (void *)offsetof(RectComp, scale));
     vao.set_divisor(2, 1); // Tell GL this attribute advances once per instance
   }
 

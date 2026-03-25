@@ -1,4 +1,7 @@
+#include <phc/phc.hpp>
+
 #include "clay.hpp"
+#include "rect.hpp"
 
 #include <betr/namespace.hpp>
 
@@ -48,4 +51,24 @@ void clean() {
   delete[] clay_data;
   LOG_INFO("UI", "Completed Clay Cleanup");
 }
+
+void render(const Clay_RenderCommandArray &cmds) {
+  Vector<RectComp> rects;
+
+  for (int i = 0; i < cmds.length; i++) {
+    const Clay_RenderCommand &cmd = cmds.internalArray[i];
+    Clay_BoundingBox bounding_box = {
+        roundf(cmd.boundingBox.x), roundf(cmd.boundingBox.y), roundf(cmd.boundingBox.width), roundf(cmd.boundingBox.height)
+    };
+
+    switch (cmd.commandType) {
+    case CLAY_RENDER_COMMAND_TYPE_RECTANGLE: rects.emplace_back(bounding_box.x, bounding_box.y, bounding_box.width, bounding_box.height); break;
+
+    default: break;
+    }
+  }
+
+  renderer::rect::render(rects);
+}
+
 } // namespace clay

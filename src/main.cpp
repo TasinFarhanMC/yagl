@@ -1,3 +1,5 @@
+#include <phc/phc.hpp>
+
 #include <betr/namespace.hpp>
 
 #include <betr/chrono.hpp>
@@ -135,8 +137,8 @@ int main(int argc, const char **argv) noexcept {
   renderer::rect::init();
 
   Vector<RectComp> rects = {
-      { 0,  0, 10, 10},
-      {30, 50, 20,  5}
+      { 10,  10,  2,   2},
+      {300, 500, 20, 100}
   };
 
   TimePoint<HighResClock> end;
@@ -146,10 +148,27 @@ int main(int argc, const char **argv) noexcept {
 
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
+
+    Clay_BeginLayout();
+
+    // After - single struct
+    CLAY({
+        .id = CLAY_ID("FloatingContainer"),
+        .layout = {.sizing = {.width = CLAY_SIZING_FIXED(500), .height = CLAY_SIZING_FIXED(300)}, .padding = {16, 16, 16, 16}},
+        .backgroundColor = {140, 80, 200, 200},
+        .border = {.color = {80, 80, 80, 255}, .width = {2, 2, 2, 2}},
+    }) {
+      // children
+    }
+
+    const Clay_RenderCommandArray clay_cmds = Clay_EndLayout();
+
     // ui update
     glClear(GL_COLOR_BUFFER_BIT);
-    // render
+
+    clay::render(clay_cmds);
     renderer::rect::render(rects);
+
     glfwSwapBuffers(window);
 
     end = HighResClock::now();
