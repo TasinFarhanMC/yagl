@@ -7,8 +7,9 @@
 #include <render/clay.hpp>
 #include <systems/logger.hpp>
 
-namespace glfw {
+static uvec2 window_size {};
 
+namespace glfw {
 Guard init(uvec2 &size, const vec2 &frac, GLFWwindow *&window) {
   glfwSetErrorCallback([](int error, const char *desc) { LOG_ERROR("Window", "GLFW Error ({}): {}", error, desc); });
 
@@ -42,7 +43,7 @@ Guard init(uvec2 &size, const vec2 &frac, GLFWwindow *&window) {
     return Guard {nullptr};
   }
   glfwMakeContextCurrent(window);
-
+  window_size = size;
   LOG_INFO("Window", "Created Window ({}x{})", size.x, size.y);
 
   const uvec2 window_pos = {monitor_pos.x + (mode->width - size.x) / 2, monitor_pos.y + (mode->height - size.y) / 2};
@@ -51,11 +52,6 @@ Guard init(uvec2 &size, const vec2 &frac, GLFWwindow *&window) {
   LOG_INFO("Window", "Set Window Pos: {}, {}", window_pos.x, window_pos.y);
 
   glfwSetFramebufferSizeCallback(window, [](GLFWwindow *window, int width, int height) {
-    // float min = std::min(width / 1366.0f, height / 768.0f);
-    // float m_width = min * 1366.0f;
-    // float m_height = min * 768.0f;
-    // glViewport(std::abs(width - m_width) / 2, std::abs(height - m_height) / 2, m_width, m_height);
-
     glViewport(0, 0, width, height);
     clay::update_viewport({width, height});
   });
@@ -67,11 +63,14 @@ Guard init(uvec2 &size, const vec2 &frac, GLFWwindow *&window) {
   }
 
   {
-    vec2 v;
-    glfwGetWindowContentScale(window, &v.x, &v.y);
-    clay::update_dpi(v);
+    vec2 dpy;
+    glfwGetWindowContentScale(window, &dpy.x, &dpy.y);
+    LOG_INFO("Window", "Screen Dpy Scale: {}x{}", dpy.x, dpy.y);
+    clay::update_dpi(dpy);
   }
   glfwSetWindowContentScaleCallback(window, [](GLFWwindow *window, float xscale, float yscale) { clay::update_dpi({xscale, yscale}); });
+
+  glfwSetWindowSizeCallback(window, [](GLFWwindow *window, int width, int height) { window_size = {width, height}; });
 
   if (!gladLoadGL(glfwGetProcAddress)) {
     LOG_ERROR("GL", "Failed to initialize GLAD");
@@ -82,5 +81,15 @@ Guard init(uvec2 &size, const vec2 &frac, GLFWwindow *&window) {
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   return Guard {window};
+}
+
+void update_cursor_state(GLFWwindow *window) {
+  double x, y;
+  glfwGetCursorPos(window, &x, &y);
+
+  Clay_SetPointerState(
+      {(float)x / (clay::dpi.x * clay::scale), (float)(window_size.y - y) / (clay::dpi.y * clay::scale)},
+      glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS
+  );
 }
 } // namespace glfw

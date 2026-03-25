@@ -31,6 +31,22 @@ Path expand_path(std::string const &input) {
 uvec2 window_size = {0, 0};
 float ui_scale = 1;
 
+struct UIState {
+  int counter = 0;
+  bool sidebarOpen = true;
+  Clay_Color sidebarColor = {40, 40, 40, 255};
+};
+
+UIState appState;
+
+void HandleCounterClick(Clay_ElementId elementId, Clay_PointerData pointerData, intptr_t userData) {
+  if (pointerData.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) { appState.counter++; }
+}
+
+void HandleSidebarToggle(Clay_ElementId elementId, Clay_PointerData pointerData, intptr_t userData) {
+  if (pointerData.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) { appState.sidebarOpen = !appState.sidebarOpen; }
+}
+
 int main(int argc, const char **argv) noexcept {
   bool show_help = false;
   bool console = false;
@@ -137,6 +153,8 @@ int main(int argc, const char **argv) noexcept {
   static bool trigger_shader_reload = false;
   glfwSetKeyCallback(window, [](GLFWwindow *window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_R && action == GLFW_PRESS) { trigger_shader_reload = true; }
+    if (key == GLFW_KEY_EQUAL && mods & GLFW_MOD_SHIFT && (action == GLFW_PRESS || action == GLFW_REPEAT)) { clay::update_scale(clay::scale + 0.1); }
+    if (key == GLFW_KEY_MINUS && (action == GLFW_PRESS || action == GLFW_REPEAT)) { clay::update_scale(clay::scale - 0.1); }
   });
 
   TimePoint<HighResClock> end;
@@ -147,49 +165,97 @@ int main(int argc, const char **argv) noexcept {
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
 
-    Clay_BeginLayout();
+    glfw::update_cursor_state(window);
 
-    // Main Wrapper - adapts to screen size
+    Clay_BeginLayout();
     CLAY({
-        .id = CLAY_ID("MainContent"),
-        .layout =
-            {.sizing = {CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0)},
-                     .padding = {24, 24, 24, 24},
-                     .childGap = 16, // Spacing between vertical elements
-             .layoutDirection = CLAY_TOP_TO_BOTTOM},
-        .backgroundColor = {30, 30, 30, 255},
-        .border = {.color = {80, 80, 80, 255}, .width = {2, 2, 2, 2}}
+        .id = CLAY_ID("Root"), .layout = {.sizing = {CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0)}},
+             .backgroundColor = {20, 20, 20, 255}
     }) {
-      // --- TOP NAV BAR ---
-      CLAY({
-          .layout = {.sizing = {CLAY_SIZING_GROW(0), CLAY_SIZING_FIXED(60)}, .padding = {16, 0}},
-          .backgroundColor = {50, 50, 50, 255},
-          .border = {.color = {100, 100, 100, 255}, .width = {0, 0, 0, 4}}  // Bottom border only
-      }) {
-        // Logo or Title would go here
+
+      // 1. REACTIVE SIDEBAR
+      if (appState.sidebarOpen) {
+        CLAY({
+            .id = CLAY_ID("Sidebar"),
+            .layout =
+                {.sizing = {CLAY_SIZING_FIXED(250), CLAY_SIZING_GROW(0)},
+                         .padding = {16, 16, 16, 16},
+                         .childGap = 20,
+                         .layoutDirection = CLAY_TOP_TO_BOTTOM},
+            .backgroundColor = appState.sidebarColor
+        }) {
+          CLAY_TEXT(
+              CLAY_STRING("SETTINGS"), CLAY_TEXT_CONFIG({
+                                           .textColor = {255, 255, 255, 255},
+                                             .fontSize = 24
+          })
+          );
+
+          CLAY({
+              .id = CLAY_ID("CloseBtn"), .layout = {.padding = {10, 10, 10, 10}},
+                   .backgroundColor = {200, 50, 50, 255}
+          }) {
+            Clay_OnHover(HandleSidebarToggle, 0);
+            CLAY_TEXT(
+                CLAY_STRING("Close Sidebar"), CLAY_TEXT_CONFIG({
+                                                  .textColor = {255, 255, 255, 255},
+                                                    .fontSize = 16
+            })
+            );
+          }
+        }
       }
 
-      // --- MAIN CONTENT AREA (H-Box) ---
+      // 2. MAIN CONTENT AREA
       CLAY({
-          .layout = {.sizing = {CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0)}, .childGap = 16, .layoutDirection = CLAY_LEFT_TO_RIGHT}
+          .id = CLAY_ID("MainContent"),
+          .layout = {
+                     .sizing = {CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0)},
+                     .padding = {32, 32, 32, 32},
+                     .childGap = 20, // Moved up to match struct order
+              .layoutDirection = CLAY_TOP_TO_BOTTOM
+          }
       }) {
-        // SIDEBAR (Fixed Width)
-        CLAY({
-            .layout = {.sizing = {CLAY_SIZING_FIXED(200), CLAY_SIZING_GROW(0)}},
-            .backgroundColor = {40, 40, 40, 255},
-            .border = {.color = {80, 80, 80, 255}, .width = {2, 2, 2, 2}}
-        }) {}
+        if (!appState.sidebarOpen) {
+          CLAY({
+              .id = CLAY_ID("OpenBtn"), .layout = {.padding = {8, 8, 8, 8}},
+                   .backgroundColor = {50, 150, 50, 255}
+          }) {
+            Clay_OnHover(HandleSidebarToggle, 0);
+            CLAY_TEXT(
+                CLAY_STRING(">> Open Sidebar"), CLAY_TEXT_CONFIG({
+                                                    .textColor = {255, 255, 255, 255},
+                                                      .fontSize = 14
+            })
+            );
+          }
+        }
 
-        // CONTENT (Takes up remaining space)
+        CLAY_TEXT(
+            CLAY_STRING("Counter Application"), CLAY_TEXT_CONFIG({
+                                                    .textColor = {255, 255, 255, 255},
+                                                      .fontSize = 32
+        })
+        );
+
         CLAY({
-            .layout = {.sizing = {CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0)}},
-            .backgroundColor = {0, 80, 200, 150},
-            .border = {.color = {255, 255, 255, 200}, .width = {1, 1, 1, 1}}
-        }) {}
+            .id = CLAY_ID("IncrementBtn"),
+            .layout = {.padding = {15, 15, 15, 15}},
+            .backgroundColor = Clay_PointerOver(CLAY_ID("IncrementBtn")) ? Clay_Color {80, 80, 80, 255}
+              : Clay_Color {60, 60, 60, 255}
+        }) {
+          Clay_OnHover(HandleCounterClick, 0);
+          CLAY_TEXT(
+              CLAY_STRING("Click to Increment"), CLAY_TEXT_CONFIG({
+                                                     .textColor = {255, 255, 255, 255},
+                                                       .fontSize = 18
+          })
+          );
+        }
       }
     }
 
-    const Clay_RenderCommandArray clay_cmds = Clay_EndLayout();
+    Clay_RenderCommandArray clay_cmds = Clay_EndLayout();
 
     // ui update
     glClear(GL_COLOR_BUFFER_BIT);

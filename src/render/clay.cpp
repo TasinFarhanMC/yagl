@@ -15,8 +15,6 @@ static clay::Guard init_renderers();
 static void clean_renderers();
 
 static vec2 frame_size(1.0f);
-static float scale = 1.0f;
-static vec2 dpi(1.0f);
 
 struct RectVertex {
   Clay_BoundingBox bounding_box;
@@ -45,6 +43,9 @@ static gl::Buffer<BorderVertex> border_vertex(GL_ARRAY_BUFFER);
 static vec2 layout;
 
 namespace clay {
+float scale = 1.0f;
+vec2 dpi(1.0f);
+
 void update_viewport(vec2 size) {
   frame_size = size / (dpi * scale);
 
@@ -57,8 +58,8 @@ void update_viewport(vec2 size) {
 }
 
 void update_dpi(vec2 dpi) {
-  frame_size = frame_size * ::dpi / dpi;
-  ::dpi = dpi;
+  frame_size = frame_size * clay::dpi / dpi;
+  clay::dpi = dpi;
 
   if (Clay_GetCurrentContext()) {
     Clay_SetLayoutDimensions({frame_size.x, frame_size.y});
@@ -68,8 +69,8 @@ void update_dpi(vec2 dpi) {
   }
 }
 void update_scale(float scale) {
-  frame_size = frame_size * ::scale / scale;
-  ::scale = scale;
+  frame_size = frame_size * clay::scale / scale;
+  clay::scale = scale;
 
   Clay_SetLayoutDimensions({frame_size.x, frame_size.y});
 
