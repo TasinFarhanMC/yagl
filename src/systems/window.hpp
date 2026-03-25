@@ -34,4 +34,6 @@ struct Guard {
 };
 
 Guard init(uvec2 &size, const vec2 &frac, GLFWwindow *&window);
+
+void update_cursor_state(GLFWwindow *window);
 } // namespace glfw
