@@ -1,8 +1,10 @@
 #version 330 core
 
-#extension GL_ARB_explicit_uniform_location : require
+#extension GL_ARB_shading_language_420pack : require
 
-layout(location = 0) uniform vec2 space;
+layout(std140, binding = 0) uniform Clay {
+  vec2 space;
+};
 
 layout(location = 0) in vec2 base_pos;
 layout(location = 1) in vec2 pos;
