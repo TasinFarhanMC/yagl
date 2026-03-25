@@ -20,6 +20,7 @@ static Path log_path;
 static Path zip_path;
 
 namespace logger {
+fmt::memory_buffer buffer;
 
 std::string current_time() {
   using namespace std::chrono;
@@ -67,10 +68,16 @@ bool start(bool disable, bool console) {
   }
 }
 
+void flush() {
+  if (disable) { return; }
+  if (console) { std::cout.write(buffer.data(), buffer.size()); }
+  file.write(buffer.data(), buffer.size());
+  buffer.clear();
+}
+
 void write(const std::string &str) {
   if (disable) { return; }
-
-  std::cout << str;
+  if (console) { std::cout << str; }
   file << str;
 }
 
