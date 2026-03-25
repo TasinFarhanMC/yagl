@@ -1,4 +1,5 @@
 #pragma once
+#include <betr/chrono.hpp>
 #include <betr/filesystem.hpp>
 #include <betr/string.hpp>
 
@@ -6,7 +7,10 @@ namespace meta {
 extern betr::Path program_path;
 extern betr::Path runtime_path;
 
-inline betr::String name = "YAGL";
+inline constexpr unsigned TICK_RATE = 30;
+inline constexpr betr::HighResClock::duration TICK_TIME = betr::HighResClock::duration(betr::Seconds(1)) / TICK_RATE;
+
+inline constexpr betr::String name = "YAGL";
 
 inline constexpr int major_ver = 0;
 inline constexpr int minor_ver = 0;

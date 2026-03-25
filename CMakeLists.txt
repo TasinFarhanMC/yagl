@@ -14,7 +14,7 @@ cpmaddpackage("gh:g-truc/glm#1.0.3")
 cpmaddpackage("gh:fmtlib/fmt#12.1.0")
 cpmaddpackage("gh:bfgroup/lyra#1.7.0")
 cpmaddpackage("gh:richgel999/miniz#3.1.1")
-cpmaddpackage("gh:tasinfarhanmc/betr@0.1.0")
+cpmaddpackage("gh:tasinfarhanmc/betr@0.1.1")
 cpmaddpackage(NAME glfw3 GIT_REPOSITORY "https://github.com/glfw/glfw.git"
               GIT_TAG "3.4")
 
@@ -51,7 +51,7 @@ target_include_directories(glad PUBLIC "${INCLUDE_DIR}/glad")
 
 file(GLOB_RECURSE SRC_FILES "${SRC_DIR}/*.c" "${SRC_DIR}/*.cpp")
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(yagl ${SRC_FILES})
