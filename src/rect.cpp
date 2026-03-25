@@ -2,8 +2,8 @@
 #include "graphics/shader.hpp"
 #include "math.hpp"
 #include <gltypes.hpp>
-#include <logger.hpp>
 #include <span>
+#include <systems/logger.hpp>
 
 static gl::Buffer<RectComp> vertex(GL_ARRAY_BUFFER);
 static gl::Array<vec2> base_vertex(GL_ARRAY_BUFFER);
