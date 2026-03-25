@@ -144,14 +144,18 @@ int main(int argc, const char **argv) noexcept {
 
     Clay_BeginLayout();
 
-    // After - single struct
     CLAY({
-        .id = CLAY_ID("FloatingContainer"),
-        .layout = {.sizing = {.width = CLAY_SIZING_FIXED(500), .height = CLAY_SIZING_FIXED(300)}, .padding = {16, 16, 16, 16}},
-        .backgroundColor = {140, 80, 200, 200},
-        .border = {.color = {80, 80, 80, 255}, .width = {2, 2, 2, 2}},
+        .layout = {.sizing = {CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0)}, .padding = {50, 50, 50, 50}},
+        .backgroundColor = {0, 80, 200, 200},
     }) {
-      // children
+      CLAY({
+          .id = CLAY_ID("FloatingContainer"),
+          .layout = {.sizing = {CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0)}, .padding = {50, 50, 50, 50}},
+          .backgroundColor = {140, 80, 200, 200},
+          .border = {.color = {80, 80, 80, 255}, .width = {2, 2, 2, 2}},
+      }) {
+        // children
+      }
     }
 
     const Clay_RenderCommandArray clay_cmds = Clay_EndLayout();

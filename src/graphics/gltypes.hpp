@@ -120,13 +120,13 @@ public:
 
   void set(const T &value) { glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(T), &value); }
 
-  T *map() { return static_cast<T *>(glMapBuffer(GL_UNIFORM_BUFFER, GL_READ_WRITE)); }
+  T *map(GLenum access = GL_READ_WRITE) { return static_cast<T *>(glMapBuffer(GL_UNIFORM_BUFFER, access)); }
   T *map_range(GLintptr offset, GLsizei count, GLbitfield access) {
     return static_cast<T *>(glMapBufferRange(GL_UNIFORM_BUFFER, offset * sizeof(T), count * sizeof(T), access));
   }
   void unmap() { glUnmapBuffer(GL_UNIFORM_BUFFER); }
 
-  ~UniformBuffer() {
+  void destroy() {
     glDeleteBuffers(1, &id);
     LOG_INFO("Graphics/GL/UBO", "Deleted UniformBuffer {}", id);
   }
