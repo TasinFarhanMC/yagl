@@ -17,7 +17,7 @@ struct Guard {
   explicit Guard(bool ok) : initialized(ok) {}
 
   ~Guard() {
-    if (initialized) { logger::close(); }
+    if (initialized) { close(); }
   }
 
   Guard(const Guard &) = delete;
@@ -36,7 +36,7 @@ struct Guard {
   operator bool() const { return initialized; }
 };
 
-Guard init(bool disable, bool console);
+Guard start(bool disable, bool console);
 void write(const std::string &str);
 
 #define LOG_INFO(name, fmt_str, ...)                                                                                                                   \
