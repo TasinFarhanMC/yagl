@@ -1,3 +1,5 @@
+#include <phc/phc.hpp>
+
 #include "window.hpp"
 
 #include <glad/gl.h>
@@ -57,6 +59,15 @@ Guard init(uvec2 &size, const vec2 &frac, GLFWwindow *&window) {
     }
 
     Clay_SetLayoutDimensions({width / 1.0f, height / 1.0f});
+  });
+
+  glfwSetFramebufferSizeCallback(window, [](GLFWwindow *window, int width, int height) {
+    float min = std::min(width / 1366.0f, height / 768.0f);
+    float m_width = min * 1366.0f;
+    float m_height = min * 768.0f;
+
+    // glViewport(std::abs(width - m_width) / 2, std::abs(height - m_height) / 2, m_width, m_height);
+    glViewport(0, 0, width, height);
   });
 
   if (!gladLoadGL(glfwGetProcAddress)) {
