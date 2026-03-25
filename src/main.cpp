@@ -4,7 +4,6 @@
 #include <betr/def.hpp>
 #include <betr/filesystem.hpp>
 #include <betr/vector.hpp>
-#include <clay.hpp>
 #include <glad/gl.h>
 #include <graphics/shader.hpp>
 #include <iostream>
@@ -12,6 +11,7 @@
 #include <math.hpp>
 #include <meta.hpp>
 #include <rect.hpp>
+#include <render/clay.hpp>
 #include <systems/logger.hpp>
 #include <systems/window.hpp>
 
@@ -113,13 +113,13 @@ int main(int argc, const char **argv) {
     return 1;
   }
 
-  logger::Guard log_guard = logger::init(disable_log, console);
+  const logger::Guard log_guard = logger::init(disable_log, console);
   if (!log_guard) { return 1; }
 
   LOG_INFO("Logger", "Logger Initialized");
 
   GLFWwindow *window;
-  glfw::Guard glfw_guard = glfw::init(window_size, window_frac, window);
+  const glfw::Guard glfw_guard = glfw::init(window_size, window_frac, window);
   if (!glfw_guard) { return 1; }
 
   LOG_INFO(
@@ -129,7 +129,7 @@ int main(int argc, const char **argv) {
 
   if (!shader::init()) { return 1; }
 
-  clay::init(window_size);
+  const clay::Guard clay_guard = clay::init(window_size);
 
   renderer::rect::init();
 
@@ -166,7 +166,6 @@ int main(int argc, const char **argv) {
   }
 
   renderer::rect::clean();
-  clay::clean();
   shader::clean();
 
   return 0;
