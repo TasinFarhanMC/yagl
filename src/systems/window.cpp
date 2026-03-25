@@ -1,8 +1,8 @@
 #include "window.hpp"
 
-#include <clay.hpp>
 #include <glad/gl.h>
 #include <meta.hpp>
+#include <render/clay.hpp>
 #include <systems/logger.hpp>
 
 namespace glfw {
