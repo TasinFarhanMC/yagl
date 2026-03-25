@@ -37,6 +37,10 @@ struct Guard {
 };
 
 Guard init(const uvec2 &size);
-
 void render(const Clay_RenderCommandArray &cmds, const vec2 &draw_size);
+
+void update_viewport(vec2 size);
+
+void update_dpi(vec2 dpi);
+void update_scale(float scale);
 } // namespace clay

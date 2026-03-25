@@ -22,8 +22,51 @@ struct RectVertex {
 static gl::Buffer<RectVertex> rect_vertex(GL_ARRAY_BUFFER);
 static gl::Array<vec2> rect_base(GL_ARRAY_BUFFER);
 static gl::VertexArray rect_vao;
+static vec2 layout;
+
+struct ClayUBO {
+  vec2 space;
+};
+
+static gl::UniformBuffer<ClayUBO> clay_ubo(0);
+
+static vec2 frame_size(1.0f);
+static float scale = 1.0f;
+static vec2 dpi(1.0f);
 
 namespace clay {
+void update_viewport(vec2 size) {
+  frame_size = size / (dpi * scale);
+
+  if (Clay_GetCurrentContext()) {
+    Clay_SetLayoutDimensions({frame_size.x, frame_size.y});
+
+    clay_ubo.bind();
+    clay_ubo.set({frame_size});
+  }
+}
+
+void update_dpi(vec2 dpi) {
+  frame_size = frame_size * ::dpi / dpi;
+  ::dpi = dpi;
+
+  if (Clay_GetCurrentContext()) {
+    Clay_SetLayoutDimensions({frame_size.x, frame_size.y});
+
+    clay_ubo.bind();
+    clay_ubo.set({frame_size});
+  }
+}
+void update_scale(float scale) {
+  frame_size = frame_size * ::scale / scale;
+  ::scale = scale;
+
+  Clay_SetLayoutDimensions({frame_size.x, frame_size.y});
+
+  clay_ubo.bind();
+  clay_ubo.set({frame_size});
+}
+
 Guard init(const uvec2 &size) {
   const int clay_data_size = Clay_MinMemorySize();
   clay_data = new char[clay_data_size];
@@ -70,10 +113,9 @@ void render(const Clay_RenderCommandArray &cmds, const vec2 &draw_size) {
 
   rect_vertex.bind();
 
-  rect_vertex.update(nullptr, cmds.length);
-  RectVertex *rect_ptr = rect_vertex.map();
-
   int rect_count = 0;
+  rect_vertex.update(nullptr, cmds.length);
+  RectVertex *rect_ptr = rect_vertex.map_range(0, cmds.length, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 
   for (int i = 0; i < cmds.length; i++) {
     const Clay_RenderCommand &cmd = cmds.internalArray[i];
@@ -92,12 +134,12 @@ void render(const Clay_RenderCommandArray &cmds, const vec2 &draw_size) {
     }
   }
 
+  rect_vertex.unmap();
+
   rect_vao.bind();
   glUseProgram(shader::get(shader::rect));
-  glUniform2f(0, draw_size.x, draw_size.y);
   glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, rect_count);
-} // namespace clay
-
+}
 } // namespace clay
 
 static clay::Guard init_renderers() {
@@ -120,6 +162,8 @@ static clay::Guard init_renderers() {
 
   rect_vao.add_attrib(3, 4, GL_UNSIGNED_BYTE, true, sizeof(RectVertex), (void *)offsetof(RectVertex, color));
   rect_vao.set_divisor(3, 1);
+
+  clay_ubo.init({frame_size});
 
   return clay::Guard {true};
 }

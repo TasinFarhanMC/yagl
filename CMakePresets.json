@@ -30,7 +30,9 @@
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "CPM_USE_LOCAL_PACKAGES": "ON",
         "CMAKE_C_COMPILER_LAUNCHER": "ccache",
-        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache"
+        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
+        "CMAKE_C_FLAGS": "-fsanitize=undefined -fno-omit-frame-pointer",
+        "CMAKE_CXX_FLAGS": "-fsanitize=undefined -fno-omit-frame-pointer"
       }
     }
   ],

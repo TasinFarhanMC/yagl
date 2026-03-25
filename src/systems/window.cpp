@@ -50,25 +50,28 @@ Guard init(uvec2 &size, const vec2 &frac, GLFWwindow *&window) {
 
   LOG_INFO("Window", "Set Window Pos: {}, {}", window_pos.x, window_pos.y);
 
-  glfwSetWindowUserPointer(window, &size);
-  glfwSetWindowSizeCallback(window, [](GLFWwindow *win, int width, int height) {
-    auto *size_ptr = static_cast<uvec2 *>(glfwGetWindowUserPointer(win));
-    if (size_ptr) {
-      size_ptr->x = width;
-      size_ptr->y = height;
-    }
-
-    Clay_SetLayoutDimensions({width / 1.0f, height / 1.0f});
-  });
-
   glfwSetFramebufferSizeCallback(window, [](GLFWwindow *window, int width, int height) {
-    float min = std::min(width / 1366.0f, height / 768.0f);
-    float m_width = min * 1366.0f;
-    float m_height = min * 768.0f;
-
+    // float min = std::min(width / 1366.0f, height / 768.0f);
+    // float m_width = min * 1366.0f;
+    // float m_height = min * 768.0f;
     // glViewport(std::abs(width - m_width) / 2, std::abs(height - m_height) / 2, m_width, m_height);
+
     glViewport(0, 0, width, height);
+    clay::update_viewport({width, height});
   });
+
+  {
+    int width, height;
+    glfwGetFramebufferSize(window, &width, &height);
+    clay::update_viewport({width, height});
+  }
+
+  {
+    vec2 v;
+    glfwGetWindowContentScale(window, &v.x, &v.y);
+    clay::update_dpi(v);
+  }
+  glfwSetWindowContentScaleCallback(window, [](GLFWwindow *window, float xscale, float yscale) { clay::update_dpi({xscale, yscale}); });
 
   if (!gladLoadGL(glfwGetProcAddress)) {
     LOG_ERROR("GL", "Failed to initialize GLAD");
