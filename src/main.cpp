@@ -128,11 +128,16 @@ int main(int argc, const char **argv) noexcept {
       get_runtime_path().string(), window_size.x, window_size.y, console, disable_log
   );
 
-  const shader::Guard shader_guard = shader::init();
+  shader::Guard shader_guard = shader::init();
   if (!shader_guard) { return 1; }
 
   const clay::Guard clay_guard = clay::init(window_size);
   if (!clay_guard) { return 1; }
+
+  static bool trigger_shader_reload = false;
+  glfwSetKeyCallback(window, [](GLFWwindow *window, int key, int scancode, int action, int mods) {
+    if (key == GLFW_KEY_R && action == GLFW_PRESS) { trigger_shader_reload = true; }
+  });
 
   TimePoint<HighResClock> end;
   TimePoint<HighResClock> start = HighResClock::now();
@@ -144,17 +149,43 @@ int main(int argc, const char **argv) noexcept {
 
     Clay_BeginLayout();
 
+    // Main Wrapper - adapts to screen size
     CLAY({
-        .layout = {.sizing = {CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0)}, .padding = {50, 50, 50, 50}},
-        .backgroundColor = {0, 80, 200, 200},
+        .id = CLAY_ID("MainContent"),
+        .layout =
+            {.sizing = {CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0)},
+                     .padding = {24, 24, 24, 24},
+                     .childGap = 16, // Spacing between vertical elements
+             .layoutDirection = CLAY_TOP_TO_BOTTOM},
+        .backgroundColor = {30, 30, 30, 255},
+        .border = {.color = {80, 80, 80, 255}, .width = {2, 2, 2, 2}}
     }) {
+      // --- TOP NAV BAR ---
       CLAY({
-          .id = CLAY_ID("FloatingContainer"),
-          .layout = {.sizing = {CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0)}, .padding = {50, 50, 50, 50}},
-          .backgroundColor = {140, 80, 200, 200},
-          .border = {.color = {80, 80, 80, 255}, .width = {2, 2, 2, 2}},
+          .layout = {.sizing = {CLAY_SIZING_GROW(0), CLAY_SIZING_FIXED(60)}, .padding = {16, 0}},
+          .backgroundColor = {50, 50, 50, 255},
+          .border = {.color = {100, 100, 100, 255}, .width = {0, 0, 0, 4}}  // Bottom border only
       }) {
-        // children
+        // Logo or Title would go here
+      }
+
+      // --- MAIN CONTENT AREA (H-Box) ---
+      CLAY({
+          .layout = {.sizing = {CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0)}, .childGap = 16, .layoutDirection = CLAY_LEFT_TO_RIGHT}
+      }) {
+        // SIDEBAR (Fixed Width)
+        CLAY({
+            .layout = {.sizing = {CLAY_SIZING_FIXED(200), CLAY_SIZING_GROW(0)}},
+            .backgroundColor = {40, 40, 40, 255},
+            .border = {.color = {80, 80, 80, 255}, .width = {2, 2, 2, 2}}
+        }) {}
+
+        // CONTENT (Takes up remaining space)
+        CLAY({
+            .layout = {.sizing = {CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0)}},
+            .backgroundColor = {0, 80, 200, 150},
+            .border = {.color = {255, 255, 255, 200}, .width = {1, 1, 1, 1}}
+        }) {}
       }
     }
 
@@ -175,6 +206,20 @@ int main(int argc, const char **argv) noexcept {
 
     while (passed_time >= meta::TICK_TIME) {
       if (glfwGetKey(window, GLFW_KEY_ESCAPE)) { glfwSetWindowShouldClose(window, true); }
+
+      if (trigger_shader_reload) {
+        trigger_shader_reload = false;
+
+        LOG_INFO("Shader", "Reloading shaders...");
+        shader::clean();
+        shader_guard = shader::init();
+
+        if (!shader_guard) {
+          LOG_ERROR("Shader", "Failed to reload shaders!");
+          glfwSetWindowShouldClose(window, true);
+        }
+      }
+
       logger::flush();
 
       passed_time -= meta::TICK_TIME;

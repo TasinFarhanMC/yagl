@@ -10,6 +10,7 @@ inline constexpr int base_index = __COUNTER__;
   inline constexpr const char *get_shader_path_by_id(std::integral_constant<int, name>) { return path; }
 
 DEFINE_SHADER(rect, "rect");
+DEFINE_SHADER(border, "border");
 
 inline constexpr int count = __COUNTER__ - 1 - base_index;
 } // namespace shader
