@@ -36,7 +36,7 @@ static bool check_shader(GLuint shader, const String &type, const String &base, 
 namespace shader {
 Array<unsigned, count> programs;
 
-Guard init() {
+Guard init(bool clean) {
   std::error_code ec;
   fs::create_directory(get_shader_cache(), ec);
   if (ec) {
@@ -176,8 +176,13 @@ Guard init() {
       return Guard {false};
     }
 
-    LOG_INFO("Shader", "Compiled and loaded [{}]", link);
+    if (clean) {
+      glDeleteProgram(programs[i]);
+      LOG_INFO("Shader", "Deleted Old [{}]", link);
+    }
+
     programs[i] = program;
+    LOG_INFO("Shader", "Compiled and loaded [{}]", link);
 
     GLint binaryLength = 0;
     glGetProgramiv(program, GL_PROGRAM_BINARY_LENGTH, &binaryLength);

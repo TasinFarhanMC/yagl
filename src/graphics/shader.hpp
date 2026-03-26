@@ -35,5 +35,5 @@ struct Guard {
   operator bool() const { return initialized; }
 };
 
-Guard init();
+Guard init(bool clean = false);
 } // namespace shader
