@@ -39,16 +39,6 @@ struct UIState {
   Clay_Color sidebarColor = {40, 40, 40, 255};
 };
 
-UIState appState;
-
-void HandleCounterClick(Clay_ElementId elementId, Clay_PointerData pointerData, intptr_t userData) {
-  if (pointerData.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) { appState.counter++; }
-}
-
-void HandleSidebarToggle(Clay_ElementId elementId, Clay_PointerData pointerData, intptr_t userData) {
-  if (pointerData.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) { appState.sidebarOpen = !appState.sidebarOpen; }
-}
-
 int main(int argc, const char **argv) noexcept {
   bool show_help = false;
   bool console = false;
@@ -164,95 +154,64 @@ int main(int argc, const char **argv) noexcept {
 
     Clay_BeginLayout();
     CLAY({
-        .id = CLAY_ID("Root"), .layout = {.sizing = {CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0)}},
-             .backgroundColor = {20, 20, 20, 255}
+        .id = clay::id("Root"),
+        .layout = {.sizing = {CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0)}, .padding = {50, 50, 50, 50}},
+        // .backgroundColor = {15, 30, 45, 255},
+        .border = {                          .color = {20, 20, 20, 255},   .width = {10, 20, 30, 40}},
     }) {
+      static int box_color = 0;
+      const Clay_Color colors[2] = {
+          {255,  66, 125, 255},
+          {  1, 182,  18, 255}
+      };
 
-      // 1. REACTIVE SIDEBAR
-      if (appState.sidebarOpen) {
-        CLAY({
-            .id = CLAY_ID("Sidebar"),
-            .layout =
-                {.sizing = {CLAY_SIZING_FIXED(250), CLAY_SIZING_GROW(0)},
-                         .padding = {16, 16, 16, 16},
-                         .childGap = 20,
-                         .layoutDirection = CLAY_TOP_TO_BOTTOM},
-            .backgroundColor = appState.sidebarColor
-        }) {
-          CLAY_TEXT(
-              CLAY_STRING("SETTINGS"), CLAY_TEXT_CONFIG({
-                                           .textColor = {255, 255, 255, 255},
-                                             .fontSize = 24
-          })
-          );
+      const Clay_Color hover_colors[2] = {
+          {208,  52, 101, 255},
+          {  2, 147,  13, 255}
+      };
 
-          CLAY({
-              .id = CLAY_ID("CloseBtn"), .layout = {.padding = {10, 10, 10, 10}},
-                   .backgroundColor = {200, 50, 50, 255}
-          }) {
-            Clay_OnHover(HandleSidebarToggle, 0);
-            CLAY_TEXT(
-                CLAY_STRING("Close Sidebar"), CLAY_TEXT_CONFIG({
-                                                  .textColor = {255, 255, 255, 255},
-                                                    .fontSize = 16
-            })
-            );
+      CLAY({
+          .id = clay::id("Buttons"),
+          .layout = {
+                     .sizing = {.height = CLAY_SIZING_GROW()},
+                     .childGap = 20,
+                     .childAlignment = {.y = CLAY_ALIGN_Y_CENTER},
+                     .layoutDirection = CLAY_TOP_TO_BOTTOM
           }
+      }) {
+        CLAY({.id = clay::id("Green"), .layout = {.sizing = {CLAY_SIZING_FIXED(50), CLAY_SIZING_FIXED(50)}}, .backgroundColor = colors[1]}) {
+          Clay_OnHover(
+              [](Clay_ElementId elementId, Clay_PointerData pointerData, intptr_t userData) {
+                if (pointerData.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) { box_color = 1; }
+              },
+              0
+          );
+        }
+
+        CLAY({.id = clay::id("Pink"), .layout = {.sizing = {CLAY_SIZING_FIXED(50), CLAY_SIZING_FIXED(50)}}, .backgroundColor = colors[0]}) {
+          Clay_OnHover(
+              [](Clay_ElementId elementId, Clay_PointerData pointerData, intptr_t userData) {
+                if (pointerData.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) { box_color = 0; }
+              },
+              0
+          );
         }
       }
 
-      // 2. MAIN CONTENT AREA
       CLAY({
-          .id = CLAY_ID("MainContent"),
-          .layout = {
-                     .sizing = {CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0)},
-                     .padding = {32, 32, 32, 32},
-                     .childGap = 20, // Moved up to match struct order
-              .layoutDirection = CLAY_TOP_TO_BOTTOM
-          }
+          .id = clay::id("Box_Div"),
+          .layout = {.sizing = {CLAY_SIZING_GROW(), CLAY_SIZING_GROW()}, .childAlignment = {CLAY_ALIGN_X_CENTER, CLAY_ALIGN_Y_CENTER}}
       }) {
-        if (!appState.sidebarOpen) {
-          CLAY({
-              .id = CLAY_ID("OpenBtn"), .layout = {.padding = {8, 8, 8, 8}},
-                   .backgroundColor = {50, 150, 50, 255}
-          }) {
-            Clay_OnHover(HandleSidebarToggle, 0);
-            CLAY_TEXT(
-                CLAY_STRING(">> Open Sidebar"), CLAY_TEXT_CONFIG({
-                                                    .textColor = {255, 255, 255, 255},
-                                                      .fontSize = 14
-            })
-            );
-          }
-        }
-
-        CLAY_TEXT(
-            CLAY_STRING("Counter Application"), CLAY_TEXT_CONFIG({
-                                                    .textColor = {255, 255, 255, 255},
-                                                      .fontSize = 32
-        })
-        );
-
-        CLAY({
-            .id = CLAY_ID("IncrementBtn"),
-            .layout = {.padding = {15, 15, 15, 15}},
-            .backgroundColor = Clay_PointerOver(CLAY_ID("IncrementBtn")) ? Clay_Color {80, 80, 80, 255}
-              : Clay_Color {60, 60, 60, 255}
-        }) {
-          Clay_OnHover(HandleCounterClick, 0);
-          CLAY_TEXT(
-              CLAY_STRING("Click to Increment"), CLAY_TEXT_CONFIG({
-                                                     .textColor = {255, 255, 255, 255},
-                                                       .fontSize = 18
-          })
-          );
-        }
+        CLAY(
+            {.id = clay::id("Box"),
+             .layout {.sizing = {CLAY_SIZING_PERCENT(0.2), CLAY_SIZING_PERCENT(0.2)}},
+             .backgroundColor = Clay_Hovered() ? hover_colors[box_color] : colors[box_color]}
+        ) {}
       }
     }
 
     Clay_RenderCommandArray clay_cmds = Clay_EndLayout();
 
-    // ui update
     glClear(GL_COLOR_BUFFER_BIT);
 
     clay::render(clay_cmds, window_size);
@@ -275,9 +234,16 @@ int main(int argc, const char **argv) noexcept {
         if (!shader_guard) { LOG_ERROR("Shader", "Failed to reload shaders!"); }
       }
 
+      if (key::had_state(GLFW_KEY_BACKSPACE, key::State::Press)) { clay::update_scale(1.0); }
       if (key::had_state(GLFW_KEY_MINUS, key::State::Press, key::State::Repeat)) { clay::update_scale(clay::scale - 0.1); }
       if (key::had_state(GLFW_KEY_EQUAL, key::State::Press, key::State::Repeat) && key::mods[GLFW_KEY_EQUAL] & GLFW_MOD_SHIFT) {
         clay::update_scale(clay::scale + 0.1);
+      }
+
+      if (key::had_state(GLFW_KEY_Q, key::State::Press)) {
+        static bool debug_mode = false;
+        debug_mode = !debug_mode;
+        Clay_SetDebugModeEnabled(debug_mode);
       }
 
       logger::flush();
