@@ -13,6 +13,8 @@
 #include <math.hpp>
 #include <meta.hpp>
 #include <render/clay.hpp>
+
+#include <systems/key.hpp>
 #include <systems/logger.hpp>
 #include <systems/window.hpp>
 
@@ -150,13 +152,6 @@ int main(int argc, const char **argv) noexcept {
   const clay::Guard clay_guard = clay::init(window_size);
   if (!clay_guard) { return 1; }
 
-  static bool trigger_shader_reload = false;
-  glfwSetKeyCallback(window, [](GLFWwindow *window, int key, int scancode, int action, int mods) {
-    if (key == GLFW_KEY_R && action == GLFW_PRESS) { trigger_shader_reload = true; }
-    if (key == GLFW_KEY_EQUAL && mods & GLFW_MOD_SHIFT && (action == GLFW_PRESS || action == GLFW_REPEAT)) { clay::update_scale(clay::scale + 0.1); }
-    if (key == GLFW_KEY_MINUS && (action == GLFW_PRESS || action == GLFW_REPEAT)) { clay::update_scale(clay::scale - 0.1); }
-  });
-
   TimePoint<HighResClock> end;
   TimePoint<HighResClock> start = HighResClock::now();
   auto passed_time = HighResClock::duration(0);
@@ -273,17 +268,16 @@ int main(int argc, const char **argv) noexcept {
     while (passed_time >= meta::TICK_TIME) {
       if (glfwGetKey(window, GLFW_KEY_ESCAPE)) { glfwSetWindowShouldClose(window, true); }
 
-      if (trigger_shader_reload) {
-        trigger_shader_reload = false;
-
+      if (key::had_state(GLFW_KEY_R, key::State::Press)) {
         LOG_INFO("Shader", "Reloading shaders...");
-        shader::clean();
-        shader_guard = shader::init();
+        shader_guard = shader::init(true);
 
-        if (!shader_guard) {
-          LOG_ERROR("Shader", "Failed to reload shaders!");
-          glfwSetWindowShouldClose(window, true);
-        }
+        if (!shader_guard) { LOG_ERROR("Shader", "Failed to reload shaders!"); }
+      }
+
+      if (key::had_state(GLFW_KEY_MINUS, key::State::Press, key::State::Repeat)) { clay::update_scale(clay::scale - 0.1); }
+      if (key::had_state(GLFW_KEY_EQUAL, key::State::Press, key::State::Repeat) && key::mods[GLFW_KEY_EQUAL] & GLFW_MOD_SHIFT) {
+        clay::update_scale(clay::scale + 0.1);
       }
 
       logger::flush();

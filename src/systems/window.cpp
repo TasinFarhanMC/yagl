@@ -5,6 +5,7 @@
 #include <glad/gl.h>
 #include <meta.hpp>
 #include <render/clay.hpp>
+#include <systems/key.hpp>
 #include <systems/logger.hpp>
 
 static uvec2 window_size {};
@@ -71,6 +72,7 @@ Guard init(uvec2 &size, const vec2 &frac, GLFWwindow *&window) {
   glfwSetWindowContentScaleCallback(window, [](GLFWwindow *window, float xscale, float yscale) { clay::update_dpi({xscale, yscale}); });
 
   glfwSetWindowSizeCallback(window, [](GLFWwindow *window, int width, int height) { window_size = {width, height}; });
+  glfwSetKeyCallback(window, key::callback);
 
   if (!gladLoadGL(glfwGetProcAddress)) {
     LOG_ERROR("GL", "Failed to initialize GLAD");

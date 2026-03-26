@@ -14,5 +14,7 @@
 #include <math.hpp>
 #include <meta.hpp>
 #include <render/clay.hpp>
+
+#include <systems/key.hpp>
 #include <systems/logger.hpp>
 #include <systems/window.hpp>
