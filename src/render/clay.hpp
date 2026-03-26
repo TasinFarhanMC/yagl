@@ -2,6 +2,7 @@
 
 #include "clay.h"
 #include <math.hpp>
+#include <string_view>
 
 inline vec2 as_vec2(const Clay_Vector2 &v) { return vec2(v.x, v.y); }
 inline Clay_Vector2 as_clay2(const vec2 &v) { return Clay_Vector2(v.x, v.y); }
@@ -46,4 +47,37 @@ void update_viewport(vec2 size);
 
 void update_dpi(vec2 dpi);
 void update_scale(float scale);
+
+constexpr Clay_ElementId hash_string(Clay_String key, const uint32_t offset, const uint32_t seed) {
+  uint32_t hash = 0;
+  uint32_t base = seed;
+
+  for (int32_t i = 0; i < key.length; i++) {
+    base += key.chars[i];
+    base += (base << 10);
+    base ^= (base >> 6);
+  }
+
+  hash = base;
+  hash += offset;
+  hash += (hash << 10);
+  hash ^= (hash >> 6);
+
+  hash += (hash << 3);
+  base += (base << 3);
+  hash ^= (hash >> 11);
+  base ^= (base >> 11);
+  hash += (hash << 15);
+  base += (base << 15);
+  return (Clay_ElementId) {.id = hash + 1, .offset = offset, .baseId = base + 1, .stringId = key};
+}
+
+constexpr Clay_ElementId idi(Clay_String label, const u32 index) { return hash_string(label, index, 0); }
+constexpr Clay_ElementId idi(const std::string_view label, const u32 index) {
+  return hash_string(Clay_String {true, (i32)label.size(), label.data()}, index, 0);
+}
+
+constexpr Clay_ElementId id(Clay_String label) { return idi(label, 0); }
+constexpr Clay_ElementId id(const std::string_view label) { return idi(Clay_String {true, (i32)label.size(), label.data()}, 0); }
+
 } // namespace clay
