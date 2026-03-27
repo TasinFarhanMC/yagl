@@ -30,7 +30,15 @@ Path expand_path(std::string const &input) {
   return Path(input);
 }
 
+static GLFWwindow *window;
+
 static Clay_RenderCommandArray build_ui();
+void exit_text_box() {
+  LOG_INFO("Text", "Exited Text Feild");
+  glfwSetKeyCallback(window, key::callback);
+  text::string = nullptr;
+}
+
 int main(int argc, const char **argv) noexcept {
   bool show_help = false;
   bool console = false;
@@ -119,7 +127,6 @@ int main(int argc, const char **argv) noexcept {
 
   LOG_INFO("Logger", "Logger Initialized");
 
-  GLFWwindow *window;
   const glfw::Guard glfw_guard = glfw::init(window_frac, window);
   if (!glfw_guard) { return 1; }
 
@@ -157,7 +164,7 @@ int main(int argc, const char **argv) noexcept {
     delta_time = Duration<float>(delta).count();
 
     while (passed_time >= meta::TICK_TIME) {
-      if (glfwGetKey(window, GLFW_KEY_ESCAPE)) { glfwSetWindowShouldClose(window, true); }
+      if (key::had_state(GLFW_KEY_ESCAPE, key::State::Press)) { glfwSetWindowShouldClose(window, true); }
 
       if (key::had_state(GLFW_KEY_R, key::State::Press)) {
         LOG_INFO("Shader", "Reloading shaders...");
@@ -166,11 +173,7 @@ int main(int argc, const char **argv) noexcept {
         if (!shader_guard) { LOG_ERROR("Shader", "Failed to reload shaders!"); }
       }
 
-      if (key::has_state(GLFW_KEY_BACKSPACE, GLFW_MOD_SHIFT | GLFW_MOD_CONTROL, key::State::Press)) { clay::update_scale(1.0); }
-      if (key::had_state(GLFW_KEY_BACKSPACE, key::State::Press, key::State::Repeat) && text::string && !text::string->empty()) {
-        text::string->pop_back();
-      }
-
+      if (key::had_state(GLFW_KEY_BACKSPACE, GLFW_MOD_SHIFT | GLFW_MOD_CONTROL, key::State::Press)) { clay::update_scale(1.0); }
       if (key::had_state(GLFW_KEY_MINUS, GLFW_MOD_SHIFT | GLFW_MOD_CONTROL, key::State::Press, key::State::Repeat)) {
         clay::update_scale(clay::scale - 0.1);
       }
@@ -184,11 +187,14 @@ int main(int argc, const char **argv) noexcept {
         Clay_SetDebugModeEnabled(debug_mode);
       }
 
-      if (key::had_state(GLFW_KEY_F11, key::State::Press)) {
+      if (key::had_state(GLFW_KEY_F11, key::State::Press) || text::had_state(GLFW_KEY_F11, key::State::Press)) {
         static int mode = (int)glfw::Mode::Borderless;
         glfw::set_mode(window, static_cast<glfw::Mode>(mode));
         mode = (mode + 1) % 3;
       }
+
+      if (text::had_state(GLFW_KEY_BACKSPACE, key::State::Press, key::State::Repeat) && !text::string->empty()) { text::string->pop_back(); }
+      if (text::had_state(GLFW_KEY_ESCAPE, key::State::Press)) { exit_text_box(); }
 
       logger::flush();
 
@@ -209,10 +215,7 @@ static Clay_RenderCommandArray build_ui() {
   }) {
     Clay_OnHover(
         [](Clay_ElementId element_id, Clay_PointerData pointer_data, intptr_t user_data) {
-          if (pointer_data.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
-            LOG_INFO("Text", "Exited Text Feild");
-            text::string = nullptr;
-          }
+          if (pointer_data.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) { exit_text_box(); }
         },
         0
     );
@@ -286,6 +289,7 @@ static Clay_RenderCommandArray build_ui() {
             [](Clay_ElementId element_id, Clay_PointerData pointer_data, intptr_t user_data) {
               if (pointer_data.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
                 LOG_INFO("Text", "Entered Text Feild");
+                glfwSetKeyCallback(window, text::key_callback);
                 text::string = &text_input;
               }
             },
