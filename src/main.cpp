@@ -140,6 +140,7 @@ int main(int argc, const char **argv) noexcept {
 
   const clay::Guard clay_guard = clay::init(glfw::size);
   if (!clay_guard) { return 1; }
+  Clay__debugViewWidth = 600;
 
   TimePoint<HighResClock> end;
   TimePoint<HighResClock> start = HighResClock::now();
@@ -240,6 +241,11 @@ static Clay_RenderCommandArray build_ui() {
                    .layoutDirection = CLAY_TOP_TO_BOTTOM
         }
     }) {
+      CLAY(
+          {.id = clay::id("Box"),
+           .layout {.sizing = {CLAY_SIZING_PERCENT(0.5), CLAY_SIZING_PERCENT(0.5)}},
+           .backgroundColor = Clay_Hovered() ? hover_colors[box_color] : colors[box_color]}
+      ) {}
 
       CLAY({.id = clay::id("Pink"), .layout = {.sizing = {CLAY_SIZING_FIXED(50), CLAY_SIZING_FIXED(50)}}, .backgroundColor = colors[0]}) {
         Clay_OnHover(
@@ -260,48 +266,26 @@ static Clay_RenderCommandArray build_ui() {
       }
     }
 
+    Clay_TextElementConfig text_config = {.textColor = colors[box_color], .fontSize = 30, .lineHeight = 60};
+
     CLAY({
-        .id = clay::id("Box_Div"),
-        .layout = {
-                   .sizing = {CLAY_SIZING_GROW(), CLAY_SIZING_GROW()},
-                   .childGap = 10,
-                   .childAlignment = {CLAY_ALIGN_X_CENTER, CLAY_ALIGN_Y_CENTER},
-                   .layoutDirection = CLAY_TOP_TO_BOTTOM
-        }
+        .id = clay::id("Text feild"),
+        .layout {.sizing = {CLAY_SIZING_PERCENT(1), CLAY_SIZING_PERCENT(1)}, .padding = {50, 50, 50, 50}, .childAlignment = {.y = CLAY_ALIGN_Y_TOP}},
+        .backgroundColor = {100, 100, 100, 255}
     }) {
 
-      Clay_TextElementConfig text_config = {
-          .textColor = {255, 255, 255, 255},
-            .fontSize = 30, .lineHeight = 60
-      };
+      CLAY_TEXT(clay_string(text_input), &text_config);
 
-      CLAY({
-          .id = clay::id("Text feild"),
-          .layout {
-                   .sizing = {CLAY_SIZING_PERCENT(1), CLAY_SIZING_PERCENT(1)}, .padding = {50, 50, 100, 100}, .childAlignment = {.y = CLAY_ALIGN_Y_TOP}
+      Clay_OnHover(
+          [](Clay_ElementId element_id, Clay_PointerData pointer_data, intptr_t user_data) {
+            if (pointer_data.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+              LOG_INFO("Text", "Entered Text Feild");
+              glfwSetKeyCallback(window, text::key_callback);
+              text::string = &text_input;
+            }
           },
-          .backgroundColor = {100, 100, 100, 255}
-      }) {
-
-        CLAY_TEXT(clay_string(text_input), &text_config);
-
-        Clay_OnHover(
-            [](Clay_ElementId element_id, Clay_PointerData pointer_data, intptr_t user_data) {
-              if (pointer_data.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
-                LOG_INFO("Text", "Entered Text Feild");
-                glfwSetKeyCallback(window, text::key_callback);
-                text::string = &text_input;
-              }
-            },
-            0
-        );
-      }
-
-      CLAY(
-          {.id = clay::id("Box"),
-           .layout {.sizing = {CLAY_SIZING_PERCENT(0.2), CLAY_SIZING_PERCENT(0.2)}},
-           .backgroundColor = Clay_Hovered() ? hover_colors[box_color] : colors[box_color]}
-      ) {}
+          0
+      );
     }
   }
 
