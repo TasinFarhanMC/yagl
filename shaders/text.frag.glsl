@@ -7,7 +7,7 @@ layout(binding = 0) uniform usamplerBuffer chars;
 layout(binding = 1) uniform sampler2D font;
 
 flat in uint fColor;
-flat in int offset;
+flat in int fOffset;
 in vec2 uv;
 
 out vec4 color;
@@ -16,7 +16,7 @@ const uint GLYPH_START = 32u;
 const uint GLYPH_COUNT = 95u;
 
 void main() {
-  int index = int(uv.x) + offset;
+  int index = int(uv.x) + fOffset;
   uint packed_data = texelFetch(chars, index >> 2).r;
   uint char = (packed_data >> ((index & 3) << 3)) & 0xFFu;
 
