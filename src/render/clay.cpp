@@ -120,7 +120,7 @@ void clean() {
   LOG_INFO("UI", "Completed Clay Cleanup");
 }
 
-void render(const Clay_RenderCommandArray &cmds, const vec2 &draw_size) {
+void render(const Clay_RenderCommandArray &cmds) {
   int rect_count = 0;
   int border_count = 0;
 

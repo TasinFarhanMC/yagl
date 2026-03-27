@@ -6,6 +6,9 @@
 #include <systems/logger.hpp>
 
 namespace glfw {
+extern ivec2 size;
+extern ivec2 pos;
+
 struct Guard {
   GLFWwindow *window;
 
@@ -33,7 +36,15 @@ struct Guard {
   operator bool() const { return window != nullptr; }
 };
 
-Guard init(uvec2 &size, const vec2 &frac, GLFWwindow *&window);
+Guard init(const vec2 &frac, GLFWwindow *&window);
 
 void update_cursor_state(GLFWwindow *window);
+
+enum class Mode {
+  Windowed,
+  Borderless,
+  Fullscreen
+};
+
+void set_mode(GLFWwindow *window, Mode mode);
 } // namespace glfw
