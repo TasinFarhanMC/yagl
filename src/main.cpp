@@ -190,12 +190,6 @@ int main(int argc, const char **argv) noexcept {
         mode = (mode + 1) % 3;
       }
 
-      static int old_size = 0;
-      if (text::string && text::string->size() != old_size) {
-        LOG_INFO("Text", "Text Changed: {}", *text::string);
-        old_size = text::string->size();
-      }
-
       logger::flush();
 
       passed_time -= meta::TICK_TIME;
@@ -206,14 +200,12 @@ int main(int argc, const char **argv) noexcept {
 
 static Clay_RenderCommandArray build_ui() {
   static String text_input;
-  text::max_size = 50;
 
   Clay_BeginLayout();
   CLAY({
       .id = clay::id("Root"),
-      .layout = {.sizing = {CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0)}, .padding = {50, 50, 50, 50}},
-      // .backgroundColor = {15, 30, 45, 255},
-      .border = {                          .color = {20, 20, 20, 255},   .width = {10, 20, 30, 40}},
+      .layout = {.sizing = {CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0)}, .padding = {20, 20, 20, 20}, .childGap = 20},
+      .border = {.color = {20, 20, 20, 255}, .width = {10, 20, 30, 40}},
   }) {
     Clay_OnHover(
         [](Clay_ElementId element_id, Clay_PointerData pointer_data, intptr_t user_data) {
@@ -245,19 +237,20 @@ static Clay_RenderCommandArray build_ui() {
                    .layoutDirection = CLAY_TOP_TO_BOTTOM
         }
     }) {
-      CLAY({.id = clay::id("Green"), .layout = {.sizing = {CLAY_SIZING_FIXED(50), CLAY_SIZING_FIXED(50)}}, .backgroundColor = colors[1]}) {
-        Clay_OnHover(
-            [](Clay_ElementId element_id, Clay_PointerData pointer_data, intptr_t user_data) {
-              if (pointer_data.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) { box_color = 1; }
-            },
-            0
-        );
-      }
 
       CLAY({.id = clay::id("Pink"), .layout = {.sizing = {CLAY_SIZING_FIXED(50), CLAY_SIZING_FIXED(50)}}, .backgroundColor = colors[0]}) {
         Clay_OnHover(
             [](Clay_ElementId element_id, Clay_PointerData pointer_data, intptr_t user_data) {
               if (pointer_data.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) { box_color = 0; }
+            },
+            0
+        );
+      }
+
+      CLAY({.id = clay::id("Green"), .layout = {.sizing = {CLAY_SIZING_FIXED(50), CLAY_SIZING_FIXED(50)}}, .backgroundColor = colors[1]}) {
+        Clay_OnHover(
+            [](Clay_ElementId element_id, Clay_PointerData pointer_data, intptr_t user_data) {
+              if (pointer_data.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) { box_color = 1; }
             },
             0
         );
@@ -273,24 +266,22 @@ static Clay_RenderCommandArray build_ui() {
                    .layoutDirection = CLAY_TOP_TO_BOTTOM
         }
     }) {
-      CLAY(
-          {.id = clay::id("Box"),
-           .layout {.sizing = {CLAY_SIZING_PERCENT(0.2), CLAY_SIZING_PERCENT(0.2)}},
-           .backgroundColor = Clay_Hovered() ? hover_colors[box_color] : colors[box_color]}
-      ) {
-        Clay_TextElementConfig text_config = {
-            .textColor = {255, 255, 255, 255},
-              .fontSize = 10
-        };
 
-        CLAY_TEXT(CLAY_STRING_CONST("HELLO"), &text_config);
-      }
+      Clay_TextElementConfig text_config = {
+          .textColor = {255, 255, 255, 255},
+            .fontSize = 30, .lineHeight = 60
+      };
 
       CLAY({
           .id = clay::id("Text feild"),
-          .layout {.sizing = {CLAY_SIZING_PERCENT(0.5), CLAY_SIZING_PERCENT(0.1)}},
+          .layout {
+                   .sizing = {CLAY_SIZING_PERCENT(1), CLAY_SIZING_PERCENT(1)}, .padding = {50, 50, 100, 100}, .childAlignment = {.y = CLAY_ALIGN_Y_TOP}
+          },
           .backgroundColor = {100, 100, 100, 255}
       }) {
+
+        CLAY_TEXT(clay_string(text_input), &text_config);
+
         Clay_OnHover(
             [](Clay_ElementId element_id, Clay_PointerData pointer_data, intptr_t user_data) {
               if (pointer_data.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
@@ -301,6 +292,12 @@ static Clay_RenderCommandArray build_ui() {
             0
         );
       }
+
+      CLAY(
+          {.id = clay::id("Box"),
+           .layout {.sizing = {CLAY_SIZING_PERCENT(0.2), CLAY_SIZING_PERCENT(0.2)}},
+           .backgroundColor = Clay_Hovered() ? hover_colors[box_color] : colors[box_color]}
+      ) {}
     }
   }
 

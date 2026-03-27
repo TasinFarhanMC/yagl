@@ -19,6 +19,7 @@ out vec2 uv;
 void main() {
   uv = base_pos * size;
   gl_Position = vec4((uv + pos) * 2.0 / space - 1.0, 0.0, 1.0);
+  gl_Position.y *= -1.0;
 
   fColor = color;
   fWidth = vec4(width.xy, size - width.zw);

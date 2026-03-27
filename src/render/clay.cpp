@@ -54,7 +54,7 @@ static gl::Buffer<char> text_chars(GL_TEXTURE_BUFFER);
 static gl::Buffer<TextVertex> text_vertex(GL_ARRAY_BUFFER);
 static TextureBuffer text_tbo;
 
-static Texture2D text_font("font.png");
+static Texture2D text_font("font.png", Texture2D::PIXELATED);
 
 static clay::Guard init_renderers() {
   clay_ubo.init({frame_size});
@@ -115,7 +115,13 @@ static clay::Guard init_renderers() {
 
   text_vertex.bind();
   text_vao.add_attrib(1, 2, GL_FLOAT, false, sizeof(TextVertex), (void *)offsetof(TextVertex, pos));
-  // text_vao.add_iattrib(2, 1, GL_UNSIGNED_INT, sizeof(TextVertex), (void *)offsetof(TextVertex, meta));
+  text_vao.set_divisor(1, 1);
+
+  text_vao.add_iattrib(2, 1, GL_UNSIGNED_INT, sizeof(TextVertex), (void *)offsetof(TextVertex, meta));
+  text_vao.set_divisor(2, 1);
+
+  text_vao.add_iattrib(3, 1, GL_UNSIGNED_INT, sizeof(TextVertex), (void *)offsetof(TextVertex, color));
+  text_vao.set_divisor(3, 1);
 
   return clay::Guard {true};
 }
@@ -201,7 +207,7 @@ Guard init(const uvec2 &size) {
 
   Clay_SetMeasureTextFunction(
       [](Clay_StringSlice text, Clay_TextElementConfig *config, void *user_data) -> Clay_Dimensions {
-        return {0, 0}; // DUMMY
+        return {(float)text.length * config->fontSize, config->fontSize * 5.0f / 4}; // DUMMY
       },
       nullptr
   );
@@ -220,6 +226,8 @@ void clean() {
 void render(const Clay_RenderCommandArray &cmds) {
   int rect_count = 0;
   int border_count = 0;
+  int text_count = 0;
+  u16 char_count = 0;
 
   rect_vertex.bind();
   rect_vertex.update(nullptr, cmds.length);
@@ -233,6 +241,12 @@ void render(const Clay_RenderCommandArray &cmds) {
   border_vertex.update(nullptr, cmds.length);
   BorderVertex *border_ptr = border_vertex.map_range(0, cmds.length, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 
+  text_vertex.bind();
+  text_vertex.update(nullptr, cmds.length);
+  TextVertex *text_ptr = text_vertex.map_range(0, cmds.length, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+
+  text_chars.bind();
+  text_chars.update(nullptr, 1024);
   for (int i = 0; i < cmds.length; i++) {
     const Clay_RenderCommand &cmd = cmds.internalArray[i];
 
@@ -248,6 +262,14 @@ void render(const Clay_RenderCommandArray &cmds) {
       border_count++;
       break;
     case CLAY_RENDER_COMMAND_TYPE_TEXT:
+      glBufferSubData(GL_TEXTURE_BUFFER, char_count, cmd.renderData.text.stringContents.length, cmd.renderData.text.stringContents.chars);
+      text_ptr[text_count++] = {
+          {cmd.boundingBox.x, cmd.boundingBox.y},
+          {(u8)cmd.renderData.text.stringContents.length, (u8)cmd.renderData.text.fontSize, char_count},
+          clay_col_to_u8(cmd.renderData.text.textColor)
+      };
+      char_count += cmd.renderData.text.stringContents.length;
+      break;
     default: break;
     }
   }
@@ -267,5 +289,12 @@ void render(const Clay_RenderCommandArray &cmds) {
   border_vao.bind();
   glUseProgram(shader::get(shader::border));
   glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, border_count);
+
+  text_vao.bind();
+  text_tbo.bind(0);
+  text_font.bind(1);
+  glUseProgram(shader::get(shader::text));
+  glUniform1f(0, 5.0f / 4);
+  glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, text_count);
 }
 } // namespace clay

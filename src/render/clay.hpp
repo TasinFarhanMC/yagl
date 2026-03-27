@@ -8,7 +8,7 @@ inline vec2 as_vec2(const Clay_Vector2 &v) { return vec2(v.x, v.y); }
 inline Clay_Vector2 as_clay2(const vec2 &v) { return Clay_Vector2(v.x, v.y); }
 
 inline u8vec4 clay_col_to_u8(const Clay_Color &c) { return u8vec4(c.r, c.g, c.b, c.a); }
-
+inline Clay_String clay_string(const std::string &string) { return {true, (i32)string.size(), string.data()}; }
 namespace clay {
 extern float scale;
 extern vec2 dpi;
