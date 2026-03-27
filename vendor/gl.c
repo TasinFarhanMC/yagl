@@ -37,6 +37,7 @@ int GLAD_GL_VERSION_3_2 = 0;
 int GLAD_GL_VERSION_3_3 = 0;
 int GLAD_GL_ARB_get_program_binary = 0;
 int GLAD_GL_ARB_shading_language_420pack = 0;
+int GLAD_GL_ARB_shading_language_packing = 0;
 int GLAD_GL_ARB_texture_storage = 0;
 
 
@@ -885,6 +886,7 @@ static int glad_gl_find_extensions_gl(void) {
 
     GLAD_GL_ARB_get_program_binary = glad_gl_has_extension(exts, exts_i, "GL_ARB_get_program_binary");
     GLAD_GL_ARB_shading_language_420pack = glad_gl_has_extension(exts, exts_i, "GL_ARB_shading_language_420pack");
+    GLAD_GL_ARB_shading_language_packing = glad_gl_has_extension(exts, exts_i, "GL_ARB_shading_language_packing");
     GLAD_GL_ARB_texture_storage = glad_gl_has_extension(exts, exts_i, "GL_ARB_texture_storage");
 
     glad_gl_free_extensions(exts_i);

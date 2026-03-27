@@ -1,8 +1,10 @@
 #version 330 core
 
-flat in vec4 fColor;
+#extension GL_ARB_shading_language_packing : require
+
+flat in uint fColor;
 out vec4 color;
 
 void main() {
-  color = fColor;
+  color = unpackUnorm4x8(fColor);
 }

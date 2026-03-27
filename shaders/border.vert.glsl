@@ -9,10 +9,10 @@ layout(std140, binding = 0) uniform Clay {
 layout(location = 0) in vec2 base_pos;
 layout(location = 1) in vec2 pos;
 layout(location = 2) in vec2 size;
-layout(location = 3) in vec4 color;
+layout(location = 3) in uint color;
 layout(location = 4) in uvec4 width; // x=left, y=top, z=right, w=bottom
 
-flat out vec4 fColor;
+flat out uint fColor;
 flat out vec4 fWidth;
 out vec2 uv;
 
