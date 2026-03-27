@@ -1,4 +1,3 @@
-#include <GLFW/glfw3.h>
 #include <phc/phc.hpp>
 
 #include "window.hpp"
@@ -8,6 +7,7 @@
 #include <render/clay.hpp>
 #include <systems/key.hpp>
 #include <systems/logger.hpp>
+#include <systems/text.hpp>
 
 namespace glfw {
 ivec2 size;
@@ -76,7 +76,9 @@ Guard init(const vec2 &frac, GLFWwindow *&window) {
 
   glfwSetWindowSizeCallback(window, [](GLFWwindow *window, int width, int height) { size = {width, height}; });
   glfwSetWindowPosCallback(window, [](GLFWwindow *window, int x, int y) { pos = {x, y}; });
+
   glfwSetKeyCallback(window, key::callback);
+  glfwSetCharCallback(window, text::callback);
 
   if (!gladLoadGL(glfwGetProcAddress)) {
     LOG_ERROR("GL", "Failed to initialize GLAD");

@@ -15,6 +15,8 @@ extern betr::Array<char, GLFW_KEY_LAST + 1> mods;
 
 void callback(GLFWwindow *window, int key, int scancode, int action, int mods);
 
+template <typename... States> bool has_state(int key, States... states) { return ((key::state[key] == states) || ...); }
+
 template <typename... States> bool had_state(int key, States... states) {
   const bool result = ((key::state[key] == states) || ...);
   key::state[key] = State::None;
