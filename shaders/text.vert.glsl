@@ -9,9 +9,9 @@ layout(std140, binding = 0) uniform Clay {
 layout(location = 0) in vec2 base_pos;
 layout(location = 1) in vec2 pos;
 layout(location = 2) in uint meta; // count, scale, offset(2 byte)
-layout(location = 3) in vec4 color;
+layout(location = 3) in uint color;
 
-flat out vec4 fColor;
+flat out uint fColor;
 flat out int offset;
 out vec2 uv;
 

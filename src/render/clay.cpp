@@ -84,7 +84,7 @@ static clay::Guard init_renderers() {
     vao.add_attrib(2, 2, GL_FLOAT, false, sizeof(RectVertex), (void *)offsetof(RectVertex, bounding_box.width));
     vao.set_divisor(2, 1);
 
-    vao.add_attrib(3, 4, GL_UNSIGNED_BYTE, true, sizeof(RectVertex), (void *)offsetof(RectVertex, color));
+    vao.add_iattrib(3, 1, GL_UNSIGNED_INT, sizeof(RectVertex), (void *)offsetof(RectVertex, color));
     vao.set_divisor(3, 1);
   };
 
