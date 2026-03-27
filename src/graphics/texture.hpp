@@ -101,7 +101,7 @@ public:
     return true;
   }
 
-  void bind(GLuint slot = 0) const {
+  void bind(GLuint slot) const {
     glActiveTexture(GL_TEXTURE0 + slot);
     glBindTexture(GL_TEXTURE_2D, id);
   }
@@ -130,7 +130,10 @@ public:
     glTexBuffer(GL_TEXTURE_BUFFER, format, buffer);
   }
 
-  void bind() { glBindTexture(GL_TEXTURE_BUFFER, id); }
+  void bind(GLuint slot) {
+    glActiveTexture(GL_TEXTURE0 + slot);
+    glBindTexture(GL_TEXTURE_BUFFER, id);
+  }
 
   void destroy() { glDeleteTextures(1, &id); }
 };

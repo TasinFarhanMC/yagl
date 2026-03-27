@@ -35,10 +35,11 @@ int GLAD_GL_VERSION_3_0 = 0;
 int GLAD_GL_VERSION_3_1 = 0;
 int GLAD_GL_VERSION_3_2 = 0;
 int GLAD_GL_VERSION_3_3 = 0;
+int GLAD_GL_ARB_explicit_uniform_location = 0;
 int GLAD_GL_ARB_get_program_binary = 0;
 int GLAD_GL_ARB_shading_language_420pack = 0;
-int GLAD_GL_ARB_shading_language_packing = 0;
 int GLAD_GL_ARB_texture_storage = 0;
+int GLAD_GL_ARB_vertex_attrib_binding = 0;
 
 
 
@@ -58,6 +59,7 @@ PFNGLBINDRENDERBUFFERPROC glad_glBindRenderbuffer = NULL;
 PFNGLBINDSAMPLERPROC glad_glBindSampler = NULL;
 PFNGLBINDTEXTUREPROC glad_glBindTexture = NULL;
 PFNGLBINDVERTEXARRAYPROC glad_glBindVertexArray = NULL;
+PFNGLBINDVERTEXBUFFERPROC glad_glBindVertexBuffer = NULL;
 PFNGLBLENDCOLORPROC glad_glBlendColor = NULL;
 PFNGLBLENDEQUATIONPROC glad_glBlendEquation = NULL;
 PFNGLBLENDEQUATIONSEPARATEPROC glad_glBlendEquationSeparate = NULL;
@@ -359,7 +361,9 @@ PFNGLVERTEXATTRIB4SVPROC glad_glVertexAttrib4sv = NULL;
 PFNGLVERTEXATTRIB4UBVPROC glad_glVertexAttrib4ubv = NULL;
 PFNGLVERTEXATTRIB4UIVPROC glad_glVertexAttrib4uiv = NULL;
 PFNGLVERTEXATTRIB4USVPROC glad_glVertexAttrib4usv = NULL;
+PFNGLVERTEXATTRIBBINDINGPROC glad_glVertexAttribBinding = NULL;
 PFNGLVERTEXATTRIBDIVISORPROC glad_glVertexAttribDivisor = NULL;
+PFNGLVERTEXATTRIBFORMATPROC glad_glVertexAttribFormat = NULL;
 PFNGLVERTEXATTRIBI1IPROC glad_glVertexAttribI1i = NULL;
 PFNGLVERTEXATTRIBI1IVPROC glad_glVertexAttribI1iv = NULL;
 PFNGLVERTEXATTRIBI1UIPROC glad_glVertexAttribI1ui = NULL;
@@ -380,7 +384,9 @@ PFNGLVERTEXATTRIBI4UBVPROC glad_glVertexAttribI4ubv = NULL;
 PFNGLVERTEXATTRIBI4UIPROC glad_glVertexAttribI4ui = NULL;
 PFNGLVERTEXATTRIBI4UIVPROC glad_glVertexAttribI4uiv = NULL;
 PFNGLVERTEXATTRIBI4USVPROC glad_glVertexAttribI4usv = NULL;
+PFNGLVERTEXATTRIBIFORMATPROC glad_glVertexAttribIFormat = NULL;
 PFNGLVERTEXATTRIBIPOINTERPROC glad_glVertexAttribIPointer = NULL;
+PFNGLVERTEXATTRIBLFORMATPROC glad_glVertexAttribLFormat = NULL;
 PFNGLVERTEXATTRIBP1UIPROC glad_glVertexAttribP1ui = NULL;
 PFNGLVERTEXATTRIBP1UIVPROC glad_glVertexAttribP1uiv = NULL;
 PFNGLVERTEXATTRIBP2UIPROC glad_glVertexAttribP2ui = NULL;
@@ -390,6 +396,7 @@ PFNGLVERTEXATTRIBP3UIVPROC glad_glVertexAttribP3uiv = NULL;
 PFNGLVERTEXATTRIBP4UIPROC glad_glVertexAttribP4ui = NULL;
 PFNGLVERTEXATTRIBP4UIVPROC glad_glVertexAttribP4uiv = NULL;
 PFNGLVERTEXATTRIBPOINTERPROC glad_glVertexAttribPointer = NULL;
+PFNGLVERTEXBINDINGDIVISORPROC glad_glVertexBindingDivisor = NULL;
 PFNGLVIEWPORTPROC glad_glViewport = NULL;
 PFNGLWAITSYNCPROC glad_glWaitSync = NULL;
 
@@ -789,6 +796,15 @@ static void glad_gl_load_GL_ARB_texture_storage( GLADuserptrloadfunc load, void*
     glad_glTexStorage2D = (PFNGLTEXSTORAGE2DPROC) load(userptr, "glTexStorage2D");
     glad_glTexStorage3D = (PFNGLTEXSTORAGE3DPROC) load(userptr, "glTexStorage3D");
 }
+static void glad_gl_load_GL_ARB_vertex_attrib_binding( GLADuserptrloadfunc load, void* userptr) {
+    if(!GLAD_GL_ARB_vertex_attrib_binding) return;
+    glad_glBindVertexBuffer = (PFNGLBINDVERTEXBUFFERPROC) load(userptr, "glBindVertexBuffer");
+    glad_glVertexAttribBinding = (PFNGLVERTEXATTRIBBINDINGPROC) load(userptr, "glVertexAttribBinding");
+    glad_glVertexAttribFormat = (PFNGLVERTEXATTRIBFORMATPROC) load(userptr, "glVertexAttribFormat");
+    glad_glVertexAttribIFormat = (PFNGLVERTEXATTRIBIFORMATPROC) load(userptr, "glVertexAttribIFormat");
+    glad_glVertexAttribLFormat = (PFNGLVERTEXATTRIBLFORMATPROC) load(userptr, "glVertexAttribLFormat");
+    glad_glVertexBindingDivisor = (PFNGLVERTEXBINDINGDIVISORPROC) load(userptr, "glVertexBindingDivisor");
+}
 
 
 
@@ -884,10 +900,11 @@ static int glad_gl_find_extensions_gl(void) {
     char **exts_i = NULL;
     if (!glad_gl_get_extensions(&exts, &exts_i)) return 0;
 
+    GLAD_GL_ARB_explicit_uniform_location = glad_gl_has_extension(exts, exts_i, "GL_ARB_explicit_uniform_location");
     GLAD_GL_ARB_get_program_binary = glad_gl_has_extension(exts, exts_i, "GL_ARB_get_program_binary");
     GLAD_GL_ARB_shading_language_420pack = glad_gl_has_extension(exts, exts_i, "GL_ARB_shading_language_420pack");
-    GLAD_GL_ARB_shading_language_packing = glad_gl_has_extension(exts, exts_i, "GL_ARB_shading_language_packing");
     GLAD_GL_ARB_texture_storage = glad_gl_has_extension(exts, exts_i, "GL_ARB_texture_storage");
+    GLAD_GL_ARB_vertex_attrib_binding = glad_gl_has_extension(exts, exts_i, "GL_ARB_vertex_attrib_binding");
 
     glad_gl_free_extensions(exts_i);
 
@@ -957,6 +974,7 @@ int gladLoadGLUserPtr( GLADuserptrloadfunc load, void *userptr) {
     if (!glad_gl_find_extensions_gl()) return 0;
     glad_gl_load_GL_ARB_get_program_binary(load, userptr);
     glad_gl_load_GL_ARB_texture_storage(load, userptr);
+    glad_gl_load_GL_ARB_vertex_attrib_binding(load, userptr);
 
 
 

@@ -15,5 +15,6 @@ flat out uint fColor;
 
 void main() {
   gl_Position = vec4((base_pos * size + pos) * 2.0 / space - 1.0, 0.0, 1.0);
+  gl_Position.y *= -1.0;
   fColor = color;
 }

@@ -13,12 +13,12 @@ in vec2 uv;
 out vec4 color;
 
 const uint GLYPH_START = 32u;
-const uint GLYPH_COUNT = 59u;
+const uint GLYPH_COUNT = 95u;
 
 void main() {
   int index = int(uv.x) + offset;
   uint packed_data = texelFetch(chars, index >> 2).r;
   uint char = (packed_data >> ((index & 3) << 3)) & 0xFFu;
 
-  color = unpackUnorm4x8(fColor) * texture(font, vec2((char + fract(uv.x) - GLYPH_START) / GLYPH_COUNT, uv.y));
+  color = unpackUnorm4x8(fColor) * texture(font, vec2((char + fract(uv.x) - GLYPH_START) / GLYPH_COUNT, uv.y)).r;
 }

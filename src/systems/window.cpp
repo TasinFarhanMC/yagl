@@ -92,13 +92,11 @@ Guard init(const vec2 &frac, GLFWwindow *&window) {
 }
 
 void update_cursor_state(GLFWwindow *window) {
-  double x, y;
-  glfwGetCursorPos(window, &x, &y);
+  dvec2 pos;
+  glfwGetCursorPos(window, &pos.x, &pos.y);
+  pos /= clay::dpi * clay::scale;
 
-  Clay_SetPointerState(
-      {(float)x / (clay::dpi.x * clay::scale), (float)(size.y - y) / (clay::dpi.y * clay::scale)},
-      glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS
-  );
+  Clay_SetPointerState({(float)pos.x, (float)pos.y}, glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS);
 }
 
 void set_mode(GLFWwindow *window, Mode mode) {

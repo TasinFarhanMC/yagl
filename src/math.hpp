@@ -4,6 +4,7 @@
 
 constexpr float PI = 3.14159265358979323846f;
 
+using glm::dvec2;
 using glm::ivec2;
 using glm::u8vec2;
 using glm::uvec2;
