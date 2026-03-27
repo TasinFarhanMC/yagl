@@ -41,7 +41,7 @@ struct Guard {
 };
 
 Guard init(const uvec2 &size);
-void render(const Clay_RenderCommandArray &cmds, const vec2 &draw_size);
+void render(const Clay_RenderCommandArray &cmds);
 
 void update_viewport(vec2 size);
 
@@ -80,12 +80,14 @@ constexpr Clay_ElementId idi(const std::string_view label, const u32 index) {
 constexpr Clay_ElementId id(Clay_String label) { return idi(label, 0); }
 constexpr Clay_ElementId id(const std::string_view label) { return idi(Clay_String {true, (i32)label.size(), label.data()}, 0); }
 
-Clay_ElementId idi_local(Clay_String label, const u32 index) { return hash_string(label, index, Clay__GetParentElementId()); }
-Clay_ElementId idi_local(const std::string_view label, const u32 index) {
+inline Clay_ElementId idi_local(Clay_String label, const u32 index) { return hash_string(label, index, Clay__GetParentElementId()); }
+inline Clay_ElementId idi_local(const std::string_view label, const u32 index) {
   return hash_string(Clay_String {true, (i32)label.size(), label.data()}, index, Clay__GetParentElementId());
 }
 
-Clay_ElementId id_local(Clay_String label) { return idi(label, Clay__GetParentElementId()); }
-Clay_ElementId id_local(const std::string_view label) { return idi(Clay_String {true, (i32)label.size(), label.data()}, Clay__GetParentElementId()); }
+inline Clay_ElementId id_local(Clay_String label) { return idi(label, Clay__GetParentElementId()); }
+inline Clay_ElementId id_local(const std::string_view label) {
+  return idi(Clay_String {true, (i32)label.size(), label.data()}, Clay__GetParentElementId());
+}
 
 } // namespace clay

@@ -30,7 +30,6 @@ Path expand_path(std::string const &input) {
   return Path(input);
 }
 
-uvec2 window_size = {0, 0};
 float ui_scale = 1;
 
 struct UIState {
@@ -40,28 +39,29 @@ struct UIState {
 };
 
 int main(int argc, const char **argv) noexcept {
-  bool show_help = false;
-  bool console = false;
-  bool disable_log = false;
-  vec2 window_frac = {2.0f / 3, 2.0f / 3};
+  try {
+    bool show_help = false;
+    bool console = false;
+    bool disable_log = false;
+    vec2 window_frac = {2.0f / 3, 2.0f / 3};
 
-  lyra::cli cli;
+    lyra::cli cli;
 
 #ifdef __linux__
-  bin_path = fs::read_symlink("/proc/self/exe").parent_path();
+    bin_path = fs::read_symlink("/proc/self/exe").parent_path();
 #elif defined(__APPLE__)
 #include <mach-o/dyld.h>
-  char buf[PATH_MAX];
-  uint32_t size = sizeof(buf);
-  if (_NSGetExecutablePath(buf, &size) == 0) { bin_path = Path(buf).parent_path(); }
+    char buf[PATH_MAX];
+    uint32_t size = sizeof(buf);
+    if (_NSGetExecutablePath(buf, &size) == 0) { bin_path = Path(buf).parent_path(); }
 #elif defined(_WIN32)
 #include <windows.h>
-  char buf[MAX_PATH];
-  GetModuleFileNameA(NULL, buf, MAX_PATH);
-  bin_path = Path(buf).parent_path();
+    char buf[MAX_PATH];
+    GetModuleFileNameA(NULL, buf, MAX_PATH);
+    bin_path = Path(buf).parent_path();
 #endif
-  try {
-    // clang-format off
+    try {
+      // clang-format off
   cli |= lyra::help(show_help)
         | lyra::opt([](String const& s) { meta::program_path = expand_path(s); }, "path")
             ["-p"]["--program"]("Path to program directory or %bin to use binary path")
@@ -71,186 +71,200 @@ int main(int argc, const char **argv) noexcept {
           | lyra::opt([&](String const& s) { 
               if (!s.empty() && s.back() == '%') {
                 window_frac.x = std::stof(s.substr(0, s.size() - 1)) / 100.0f;
-                window_size.x = 0;
+                glfw::size.x = 0;
               } else {
                 window_frac.x = 0;
-                window_size.x = std::stoi(s);
+                glfw::size.x = std::stoi(s);
               }
           }, "width")["-w"]["--width"]("Window Width, Use % for screen percentage").required()
           | lyra::opt([&](String const& s) { 
               if (!s.empty() && s.back() == '%') {
                 window_frac.y = std::stof(s.substr(0, s.size() - 1)) / 100.0f;
-                window_size.y = 0;
+                glfw::size.y = 0;
               } else {
                 window_frac.y = 0;
-                window_size.y = std::stoi(s);
+                glfw::size.y = std::stoi(s);
               }
           }, "height")["-h"]["--height"]("Window Height, Use % for screen percentage").required())
         | lyra::opt(console)["-c"]["--console"]("Print log to console")
         | lyra::opt(disable_log)["-n"]["--no-log"]("Disable logging");
-    // clang-format on
-  } catch (const std::exception &e) {
-    std::cerr << "Unable to Parse Arguments: " << e.what() << std::endl;
-    return 1;
-  }
+      // clang-format on
+    } catch (const std::exception &e) {
+      std::cerr << "Unable to Parse Arguments: " << e.what() << std::endl;
+      return 1;
+    }
 
-  lyra::parse_result result = cli.parse({argc, argv});
+    lyra::parse_result result = cli.parse({argc, argv});
 
-  if (!result) {
-    std::cout << cli << std::endl;
-    std::cerr << "Error: " << result.message() << std::endl;
-    return 1;
-  }
+    if (!result) {
+      std::cout << cli << std::endl;
+      std::cerr << "Error: " << result.message() << std::endl;
+      return 1;
+    }
 
-  if (show_help) {
-    std::cout << cli << std::endl;
-    return 0;
-  }
+    if (show_help) {
+      std::cout << cli << std::endl;
+      return 0;
+    }
 
-  try {
-    meta::program_path = fs::canonical(meta::program_path);
-    meta::runtime_path = fs::weakly_canonical(meta::runtime_path);
-  } catch (const fs::filesystem_error &e) {
-    LOG_FALLBACK("Init/Filesystem", "{}", e.what());
-    return 1;
-  }
+    try {
+      meta::program_path = fs::canonical(meta::program_path);
+      meta::runtime_path = fs::weakly_canonical(meta::runtime_path);
+    } catch (const fs::filesystem_error &e) {
+      LOG_FALLBACK("Init/Filesystem", "{}", e.what());
+      return 1;
+    }
 
-  std::error_code ec;
-  fs::create_directories(get_runtime_path(), ec);
-  if (ec) {
-    LOG_FALLBACK("Init/Filesystem", "Failed to create runtime directory `{}`: {}", get_runtime_path().string(), ec.message());
-    return 1;
-  }
+    std::error_code ec;
+    fs::create_directories(get_runtime_path(), ec);
+    if (ec) {
+      LOG_FALLBACK("Init/Filesystem", "Failed to create runtime directory `{}`: {}", get_runtime_path().string(), ec.message());
+      return 1;
+    }
 
-  const logger::Guard log_guard = logger::start(disable_log, console);
-  if (!log_guard) { return 1; }
+    const logger::Guard log_guard = logger::start(disable_log, console);
+    if (!log_guard) { return 1; }
 
-  LOG_INFO("Logger", "Logger Initialized");
+    LOG_INFO("Logger", "Logger Initialized");
 
-  GLFWwindow *window;
-  const glfw::Guard glfw_guard = glfw::init(window_size, window_frac, window);
-  if (!glfw_guard) { return 1; }
+    GLFWwindow *window;
+    const glfw::Guard glfw_guard = glfw::init(window_frac, window);
+    if (!glfw_guard) { return 1; }
 
-  LOG_INFO(
-      "Init/CLI", "Parsed Arguments, program: {}, runtime: {}, width: {}, height: {}, console: {}, disable_log: {}", get_program_path().string(),
-      get_runtime_path().string(), window_size.x, window_size.y, console, disable_log
-  );
+    LOG_INFO(
+        "Init/CLI", "Parsed Arguments, program: {}, runtime: {}, width: {}, height: {}, console: {}, disable_log: {}", get_program_path().string(),
+        get_runtime_path().string(), glfw::size.x, glfw::size.y, console, disable_log
+    );
 
-  shader::Guard shader_guard = shader::init();
-  if (!shader_guard) { return 1; }
+    shader::Guard shader_guard = shader::init();
+    if (!shader_guard) { return 1; }
 
-  const clay::Guard clay_guard = clay::init(window_size);
-  if (!clay_guard) { return 1; }
+    const clay::Guard clay_guard = clay::init(glfw::size);
+    if (!clay_guard) { return 1; }
 
-  TimePoint<HighResClock> end;
-  TimePoint<HighResClock> start = HighResClock::now();
-  auto passed_time = HighResClock::duration(0);
-  float delta_time = 0;
+    TimePoint<HighResClock> end;
+    TimePoint<HighResClock> start = HighResClock::now();
+    auto passed_time = HighResClock::duration(0);
+    float delta_time = 0;
 
-  while (!glfwWindowShouldClose(window)) {
-    glfwPollEvents();
+    while (!glfwWindowShouldClose(window)) {
+      glfwPollEvents();
 
-    glfw::update_cursor_state(window);
+      glfw::update_cursor_state(window);
 
-    Clay_BeginLayout();
-    CLAY({
-        .id = clay::id("Root"),
-        .layout = {.sizing = {CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0)}, .padding = {50, 50, 50, 50}},
-        // .backgroundColor = {15, 30, 45, 255},
-        .border = {                          .color = {20, 20, 20, 255},   .width = {10, 20, 30, 40}},
-    }) {
-      static int box_color = 0;
-      const Clay_Color colors[2] = {
-          {255,  66, 125, 255},
-          {  1, 182,  18, 255}
-      };
-
-      const Clay_Color hover_colors[2] = {
-          {208,  52, 101, 255},
-          {  2, 147,  13, 255}
-      };
-
+      Clay_BeginLayout();
       CLAY({
-          .id = clay::id("Buttons"),
-          .layout = {
-                     .sizing = {.height = CLAY_SIZING_GROW()},
-                     .childGap = 20,
-                     .childAlignment = {.y = CLAY_ALIGN_Y_CENTER},
-                     .layoutDirection = CLAY_TOP_TO_BOTTOM
+          .id = clay::id("Root"),
+          .layout = {.sizing = {CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0)}, .padding = {50, 50, 50, 50}},
+          // .backgroundColor = {15, 30, 45, 255},
+          .border = {                          .color = {20, 20, 20, 255},   .width = {10, 20, 30, 40}},
+      }) {
+        static int box_color = 0;
+        const Clay_Color colors[2] = {
+            {255,  66, 125, 255},
+            {  1, 182,  18, 255}
+        };
+
+        const Clay_Color hover_colors[2] = {
+            {208,  52, 101, 255},
+            {  2, 147,  13, 255}
+        };
+
+        CLAY({
+            .id = clay::id("Buttons"),
+            .layout = {
+                       .sizing = {.height = CLAY_SIZING_GROW()},
+                       .childGap = 20,
+                       .childAlignment = {.y = CLAY_ALIGN_Y_CENTER},
+                       .layoutDirection = CLAY_TOP_TO_BOTTOM
+            }
+        }) {
+          CLAY({.id = clay::id("Green"), .layout = {.sizing = {CLAY_SIZING_FIXED(50), CLAY_SIZING_FIXED(50)}}, .backgroundColor = colors[1]}) {
+            Clay_OnHover(
+                [](Clay_ElementId elementId, Clay_PointerData pointerData, intptr_t userData) {
+                  if (pointerData.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) { box_color = 1; }
+                },
+                0
+            );
           }
-      }) {
-        CLAY({.id = clay::id("Green"), .layout = {.sizing = {CLAY_SIZING_FIXED(50), CLAY_SIZING_FIXED(50)}}, .backgroundColor = colors[1]}) {
-          Clay_OnHover(
-              [](Clay_ElementId elementId, Clay_PointerData pointerData, intptr_t userData) {
-                if (pointerData.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) { box_color = 1; }
-              },
-              0
-          );
+
+          CLAY({.id = clay::id("Pink"), .layout = {.sizing = {CLAY_SIZING_FIXED(50), CLAY_SIZING_FIXED(50)}}, .backgroundColor = colors[0]}) {
+            Clay_OnHover(
+                [](Clay_ElementId elementId, Clay_PointerData pointerData, intptr_t userData) {
+                  if (pointerData.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) { box_color = 0; }
+                },
+                0
+            );
+          }
         }
 
-        CLAY({.id = clay::id("Pink"), .layout = {.sizing = {CLAY_SIZING_FIXED(50), CLAY_SIZING_FIXED(50)}}, .backgroundColor = colors[0]}) {
-          Clay_OnHover(
-              [](Clay_ElementId elementId, Clay_PointerData pointerData, intptr_t userData) {
-                if (pointerData.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) { box_color = 0; }
-              },
-              0
-          );
+        CLAY({
+            .id = clay::id("Box_Div"),
+            .layout = {.sizing = {CLAY_SIZING_GROW(), CLAY_SIZING_GROW()}, .childAlignment = {CLAY_ALIGN_X_CENTER, CLAY_ALIGN_Y_CENTER}}
+        }) {
+          CLAY(
+              {.id = clay::id("Box"),
+               .layout {.sizing = {CLAY_SIZING_PERCENT(0.2), CLAY_SIZING_PERCENT(0.2)}},
+               .backgroundColor = Clay_Hovered() ? hover_colors[box_color] : colors[box_color]}
+          ) {}
         }
       }
 
-      CLAY({
-          .id = clay::id("Box_Div"),
-          .layout = {.sizing = {CLAY_SIZING_GROW(), CLAY_SIZING_GROW()}, .childAlignment = {CLAY_ALIGN_X_CENTER, CLAY_ALIGN_Y_CENTER}}
-      }) {
-        CLAY(
-            {.id = clay::id("Box"),
-             .layout {.sizing = {CLAY_SIZING_PERCENT(0.2), CLAY_SIZING_PERCENT(0.2)}},
-             .backgroundColor = Clay_Hovered() ? hover_colors[box_color] : colors[box_color]}
-        ) {}
+      Clay_RenderCommandArray clay_cmds = Clay_EndLayout();
+
+      glClear(GL_COLOR_BUFFER_BIT);
+
+      clay::render(clay_cmds);
+
+      glfwSwapBuffers(window);
+
+      end = HighResClock::now();
+      const HighResClock::duration delta = end - start;
+      start = end;
+      passed_time += delta;
+      delta_time = Duration<float>(delta).count();
+
+      while (passed_time >= meta::TICK_TIME) {
+        if (glfwGetKey(window, GLFW_KEY_ESCAPE)) { glfwSetWindowShouldClose(window, true); }
+
+        if (key::had_state(GLFW_KEY_R, key::State::Press)) {
+          LOG_INFO("Shader", "Reloading shaders...");
+          shader_guard = shader::init(true);
+
+          if (!shader_guard) { LOG_ERROR("Shader", "Failed to reload shaders!"); }
+        }
+
+        if (key::had_state(GLFW_KEY_BACKSPACE, key::State::Press)) { clay::update_scale(1.0); }
+        if (key::had_state(GLFW_KEY_MINUS, key::State::Press, key::State::Repeat)) { clay::update_scale(clay::scale - 0.1); }
+        if (key::had_state(GLFW_KEY_EQUAL, key::State::Press, key::State::Repeat) && key::mods[GLFW_KEY_EQUAL] & GLFW_MOD_SHIFT) {
+          clay::update_scale(clay::scale + 0.1);
+        }
+
+        if (key::had_state(GLFW_KEY_Q, key::State::Press)) {
+          static bool debug_mode = false;
+          debug_mode = !debug_mode;
+          Clay_SetDebugModeEnabled(debug_mode);
+        }
+
+        if (key::had_state(GLFW_KEY_F11, key::State::Press)) {
+          static int mode = (int)glfw::Mode::Borderless;
+          glfw::set_mode(window, static_cast<glfw::Mode>(mode));
+          mode = (mode + 1) % 3;
+        }
+
+        if (key::had_state(GLFW_KEY_F1, key::State::Repeat)) {
+          LOG_INFO("Init", "Crashing Now");
+          throw std::runtime_error("User Crash");
+        }
+
+        logger::flush();
+
+        passed_time -= meta::TICK_TIME;
       }
     }
-
-    Clay_RenderCommandArray clay_cmds = Clay_EndLayout();
-
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    clay::render(clay_cmds, window_size);
-
-    glfwSwapBuffers(window);
-
-    end = HighResClock::now();
-    const HighResClock::duration delta = end - start;
-    start = end;
-    passed_time += delta;
-    delta_time = Duration<float>(delta).count();
-
-    while (passed_time >= meta::TICK_TIME) {
-      if (glfwGetKey(window, GLFW_KEY_ESCAPE)) { glfwSetWindowShouldClose(window, true); }
-
-      if (key::had_state(GLFW_KEY_R, key::State::Press)) {
-        LOG_INFO("Shader", "Reloading shaders...");
-        shader_guard = shader::init(true);
-
-        if (!shader_guard) { LOG_ERROR("Shader", "Failed to reload shaders!"); }
-      }
-
-      if (key::had_state(GLFW_KEY_BACKSPACE, key::State::Press)) { clay::update_scale(1.0); }
-      if (key::had_state(GLFW_KEY_MINUS, key::State::Press, key::State::Repeat)) { clay::update_scale(clay::scale - 0.1); }
-      if (key::had_state(GLFW_KEY_EQUAL, key::State::Press, key::State::Repeat) && key::mods[GLFW_KEY_EQUAL] & GLFW_MOD_SHIFT) {
-        clay::update_scale(clay::scale + 0.1);
-      }
-
-      if (key::had_state(GLFW_KEY_Q, key::State::Press)) {
-        static bool debug_mode = false;
-        debug_mode = !debug_mode;
-        Clay_SetDebugModeEnabled(debug_mode);
-      }
-
-      logger::flush();
-
-      passed_time -= meta::TICK_TIME;
-    }
+    return 0;
+  } catch (const std::exception &e) {
+    LOG_FALLBACK("Init", "Exception: {}", e.what());
+    return 1;
   }
-
-  return 0;
 }
