@@ -6,15 +6,15 @@
 
 #include <betr/vector.hpp>
 #include <graphics/gltypes.hpp>
+#include <graphics/texture.hpp>
 #include <systems/logger.hpp>
 
 static char *clay_data;
-static Clay_Arena arena;
-
-static clay::Guard init_renderers();
-static void clean_renderers();
-
 static vec2 frame_size(1.0f);
+
+struct ClayUBO {
+  vec2 space;
+};
 
 struct RectVertex {
   Clay_BoundingBox bounding_box;
@@ -25,8 +25,16 @@ struct BorderVertex {
   u16vec4 width;
 };
 
-struct ClayUBO {
-  vec2 space;
+struct TextVertex {
+  vec2 pos;
+
+  struct {
+    u8 count;
+    u8 scale;
+    u16 offset;
+  } meta;
+
+  u8vec4 color;
 };
 
 static gl::UniformBuffer<ClayUBO> clay_ubo(0);
@@ -40,7 +48,96 @@ static gl::VertexArray border_vao;
 static gl::Buffer<RectVertex> border_rect_vertex(GL_ARRAY_BUFFER);
 static gl::Buffer<BorderVertex> border_vertex(GL_ARRAY_BUFFER);
 
-static vec2 layout;
+static gl::VertexArray text_vao;
+static gl::Buffer<char> text_chars(GL_TEXTURE_BUFFER);
+
+static gl::Buffer<TextVertex> text_vertex(GL_ARRAY_BUFFER);
+static TextureBuffer text_tbo;
+
+static Texture2D text_font("font.png");
+
+static clay::Guard init_renderers() {
+  clay_ubo.init({frame_size});
+
+  base_vertex.init({
+      {1.0f, 1.0f},
+      {0.0f, 1.0f},
+      {0.0f, 0.0f},
+      {1.0f, 0.0f}
+  });
+  rect_vertex.init();
+
+  border_vertex.init();
+  border_rect_vertex.init();
+
+  text_vertex.init();
+  text_chars.init();
+
+  text_tbo.init(text_chars, GL_R32UI);
+
+  if (!text_font.init()) { return clay::Guard {false}; }
+
+  auto setup_rect_attribs = [](const gl::VertexArray &vao) {
+    vao.add_attrib(1, 2, GL_FLOAT, false, sizeof(RectVertex), (void *)offsetof(RectVertex, bounding_box.x));
+    vao.set_divisor(1, 1);
+
+    vao.add_attrib(2, 2, GL_FLOAT, false, sizeof(RectVertex), (void *)offsetof(RectVertex, bounding_box.width));
+    vao.set_divisor(2, 1);
+
+    vao.add_attrib(3, 4, GL_UNSIGNED_BYTE, true, sizeof(RectVertex), (void *)offsetof(RectVertex, color));
+    vao.set_divisor(3, 1);
+  };
+
+  rect_vao.init();
+
+  base_vertex.bind();
+  rect_vao.add_attrib(0, 2, GL_FLOAT, false, sizeof(vec2), (void *)0);
+
+  rect_vertex.bind();
+  setup_rect_attribs(rect_vao);
+
+  border_vao.init();
+
+  base_vertex.bind();
+  rect_vao.add_attrib(0, 2, GL_FLOAT, false, sizeof(vec2), (void *)0);
+
+  border_rect_vertex.bind();
+  setup_rect_attribs(border_vao);
+
+  border_vertex.bind();
+  border_vao.add_iattrib(4, 4, GL_UNSIGNED_SHORT, sizeof(BorderVertex), (void *)offsetof(BorderVertex, width));
+  border_vao.set_divisor(4, 1);
+
+  text_vao.init();
+
+  base_vertex.bind();
+  text_vao.add_attrib(0, 2, GL_FLOAT, false, sizeof(vec2), (void *)0);
+
+  text_vertex.bind();
+  text_vao.add_attrib(1, 2, GL_FLOAT, false, sizeof(TextVertex), (void *)offsetof(TextVertex, pos));
+  // text_vao.add_iattrib(2, 1, GL_UNSIGNED_INT, sizeof(TextVertex), (void *)offsetof(TextVertex, meta));
+
+  return clay::Guard {true};
+}
+
+static void clean_renderers() {
+  clay_ubo.destroy();
+
+  base_vertex.destroy();
+
+  rect_vertex.destroy();
+  border_vertex.destroy();
+  border_rect_vertex.destroy();
+  text_vertex.destroy();
+  text_chars.destroy();
+
+  text_tbo.destroy();
+  text_font.destroy();
+
+  rect_vao.destroy();
+  border_vao.destroy();
+  text_vao.destroy();
+}
 
 namespace clay {
 float scale = 1.0f;
@@ -81,7 +178,7 @@ void update_scale(float scale) {
 Guard init(const uvec2 &size) {
   const int clay_data_size = Clay_MinMemorySize();
   clay_data = new char[clay_data_size];
-  arena = Clay_CreateArenaWithCapacityAndMemory(clay_data_size, clay_data);
+  static Clay_Arena arena = Clay_CreateArenaWithCapacityAndMemory(clay_data_size, clay_data);
 
   Clay_Initialize(
       arena, {(float)size.x, (float)size.y},
@@ -172,64 +269,3 @@ void render(const Clay_RenderCommandArray &cmds) {
   glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, border_count);
 }
 } // namespace clay
-
-static clay::Guard init_renderers() {
-  clay_ubo.init({frame_size});
-
-  base_vertex.init({
-      {1.0f, 1.0f},
-      {0.0f, 1.0f},
-      {0.0f, 0.0f},
-      {1.0f, 0.0f}
-  });
-  rect_vertex.init();
-
-  border_vertex.init();
-  border_rect_vertex.init();
-
-  auto setup_rect_attribs = [](const gl::VertexArray &vao) {
-    vao.add_attrib(1, 2, GL_FLOAT, false, sizeof(RectVertex), (void *)offsetof(RectVertex, bounding_box.x));
-    vao.set_divisor(1, 1);
-
-    vao.add_attrib(2, 2, GL_FLOAT, false, sizeof(RectVertex), (void *)offsetof(RectVertex, bounding_box.width));
-    vao.set_divisor(2, 1);
-
-    vao.add_attrib(3, 4, GL_UNSIGNED_BYTE, true, sizeof(RectVertex), (void *)offsetof(RectVertex, color));
-    vao.set_divisor(3, 1);
-  };
-
-  rect_vao.init();
-
-  base_vertex.bind();
-  rect_vao.add_attrib(0, 2, GL_FLOAT, false, sizeof(vec2), (void *)0);
-
-  rect_vertex.bind();
-  setup_rect_attribs(rect_vao);
-
-  border_vao.init();
-
-  base_vertex.bind();
-  rect_vao.add_attrib(0, 2, GL_FLOAT, false, sizeof(vec2), (void *)0);
-
-  border_rect_vertex.bind();
-  setup_rect_attribs(border_vao);
-
-  border_vertex.bind();
-  border_vao.add_iattrib(4, 4, GL_UNSIGNED_SHORT, sizeof(BorderVertex), (void *)offsetof(BorderVertex, width));
-  border_vao.set_divisor(4, 1);
-
-  return clay::Guard {true};
-}
-
-static void clean_renderers() {
-  clay_ubo.destroy();
-
-  base_vertex.destroy();
-
-  rect_vertex.destroy();
-  border_vertex.destroy();
-  border_rect_vertex.destroy();
-
-  rect_vao.destroy();
-  border_vao.destroy();
-}

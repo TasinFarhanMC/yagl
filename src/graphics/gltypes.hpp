@@ -133,5 +133,4 @@ public:
 
   operator GLuint() const { return id; }
 };
-
 } // namespace gl

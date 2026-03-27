@@ -11,6 +11,7 @@ inline constexpr int base_index = __COUNTER__;
 
 DEFINE_SHADER(rect, "rect");
 DEFINE_SHADER(border, "border");
+DEFINE_SHADER(text, "text");
 
 inline constexpr int count = __COUNTER__ - 1 - base_index;
 } // namespace shader
