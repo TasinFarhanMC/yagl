@@ -166,17 +166,15 @@ int main(int argc, const char **argv) noexcept {
         if (!shader_guard) { LOG_ERROR("Shader", "Failed to reload shaders!"); }
       }
 
-      if (key::has_state(GLFW_KEY_BACKSPACE, key::State::Press) && key::mods[GLFW_KEY_BACKSLASH] & GLFW_MOD_SHIFT | GLFW_MOD_CONTROL) {
-        clay::update_scale(1.0);
-      }
+      if (key::has_state(GLFW_KEY_BACKSPACE, GLFW_MOD_SHIFT | GLFW_MOD_CONTROL, key::State::Press)) { clay::update_scale(1.0); }
       if (key::had_state(GLFW_KEY_BACKSPACE, key::State::Press, key::State::Repeat) && text::string && !text::string->empty()) {
         text::string->pop_back();
       }
 
-      if (key::had_state(GLFW_KEY_MINUS, key::State::Press, key::State::Repeat) && key::mods[GLFW_KEY_MINUS] & GLFW_MOD_SHIFT | GLFW_MOD_CONTROL) {
+      if (key::had_state(GLFW_KEY_MINUS, GLFW_MOD_SHIFT | GLFW_MOD_CONTROL, key::State::Press, key::State::Repeat)) {
         clay::update_scale(clay::scale - 0.1);
       }
-      if (key::had_state(GLFW_KEY_EQUAL, key::State::Press, key::State::Repeat) && key::mods[GLFW_KEY_EQUAL] & GLFW_MOD_SHIFT | GLFW_MOD_CONTROL) {
+      if (key::had_state(GLFW_KEY_EQUAL, GLFW_MOD_SHIFT | GLFW_MOD_CONTROL, key::State::Press, key::State::Repeat)) {
         clay::update_scale(clay::scale + 0.1);
       }
 
