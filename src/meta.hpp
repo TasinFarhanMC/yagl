@@ -27,6 +27,7 @@ inline betr::Path get_src_path() { return betr::fs::absolute(YAGL_SRC_PATH); }
 
 inline betr::Path get_program_path() { return meta::program_path; }
 inline betr::Path get_shader_path() { return get_program_path() / "shaders"; }
+inline betr::Path get_texture_path() { return get_program_path() / "textures"; }
 
 inline betr::Path get_runtime_path() { return meta::runtime_path; }
 inline betr::Path get_log_path() { return get_runtime_path() / "logs"; }

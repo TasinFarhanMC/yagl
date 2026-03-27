@@ -277,7 +277,14 @@ static Clay_RenderCommandArray build_ui() {
           {.id = clay::id("Box"),
            .layout {.sizing = {CLAY_SIZING_PERCENT(0.2), CLAY_SIZING_PERCENT(0.2)}},
            .backgroundColor = Clay_Hovered() ? hover_colors[box_color] : colors[box_color]}
-      ) {}
+      ) {
+        Clay_TextElementConfig text_config = {
+            .textColor = {255, 255, 255, 255},
+              .fontSize = 10
+        };
+
+        CLAY_TEXT(CLAY_STRING_CONST("HELLO"), &text_config);
+      }
 
       CLAY({
           .id = clay::id("Text feild"),

@@ -51,7 +51,7 @@ Guard init(const vec2 &frac, GLFWwindow *&window) {
   pos = {monitor_pos.x + (mode->width - size.x) / 2, monitor_pos.y + (mode->height - size.y) / 2};
   glfwSetWindowPos(window, pos.x, pos.y);
 
-  LOG_INFO("Window", "Set Window Pos: {}, {}", pos.x, pos.y);
+  LOG_INFO("Window", "Window Pos: {}, {}", pos.x, pos.y);
 
   {
     int width, height;
