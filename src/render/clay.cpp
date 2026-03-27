@@ -29,11 +29,11 @@ struct TextVertex {
   vec2 pos;
 
   struct {
-    u8 count;
-    u8 scale;
-    u16 offset;
-  } meta;
+    u16 count;
+    u16 scale;
+  } count_scale;
 
+  u32 offset;
   u8vec4 color;
 };
 
@@ -117,11 +117,14 @@ static clay::Guard init_renderers() {
   text_vao.add_attrib(1, 2, GL_FLOAT, false, sizeof(TextVertex), (void *)offsetof(TextVertex, pos));
   text_vao.set_divisor(1, 1);
 
-  text_vao.add_iattrib(2, 1, GL_UNSIGNED_INT, sizeof(TextVertex), (void *)offsetof(TextVertex, meta));
+  text_vao.add_iattrib(2, 1, GL_UNSIGNED_INT, sizeof(TextVertex), (void *)offsetof(TextVertex, count_scale));
   text_vao.set_divisor(2, 1);
 
-  text_vao.add_iattrib(3, 1, GL_UNSIGNED_INT, sizeof(TextVertex), (void *)offsetof(TextVertex, color));
+  text_vao.add_iattrib(3, 1, GL_UNSIGNED_INT, sizeof(TextVertex), (void *)offsetof(TextVertex, offset));
   text_vao.set_divisor(3, 1);
+
+  text_vao.add_iattrib(4, 1, GL_UNSIGNED_INT, sizeof(TextVertex), (void *)offsetof(TextVertex, color));
+  text_vao.set_divisor(4, 1);
 
   return clay::Guard {true};
 }
@@ -224,10 +227,9 @@ void clean() {
 }
 
 void render(const Clay_RenderCommandArray &cmds) {
-  int rect_count = 0;
-  int border_count = 0;
-  int text_count = 0;
-  u16 char_count = 0;
+  u32 rect_count = 0;
+  u32 border_count = 0;
+  u32 char_count = 0;
 
   rect_vertex.bind();
   rect_vertex.update(nullptr, cmds.length);
@@ -245,8 +247,13 @@ void render(const Clay_RenderCommandArray &cmds) {
   text_vertex.update(nullptr, cmds.length);
   TextVertex *text_ptr = text_vertex.map_range(0, cmds.length, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 
-  text_chars.bind();
-  text_chars.update(nullptr, 1024);
+  struct Text {
+    const char *ptr;
+    u16 length;
+  };
+  Vector<Text> texts;
+  texts.reserve(cmds.length);
+
   for (int i = 0; i < cmds.length; i++) {
     const Clay_RenderCommand &cmd = cmds.internalArray[i];
 
@@ -262,17 +269,29 @@ void render(const Clay_RenderCommandArray &cmds) {
       border_count++;
       break;
     case CLAY_RENDER_COMMAND_TYPE_TEXT:
-      glBufferSubData(GL_TEXTURE_BUFFER, char_count, cmd.renderData.text.stringContents.length, cmd.renderData.text.stringContents.chars);
-      text_ptr[text_count++] = {
-          {cmd.boundingBox.x, cmd.boundingBox.y},
-          {(u8)cmd.renderData.text.stringContents.length, (u8)cmd.renderData.text.fontSize, char_count},
+      text_ptr[texts.size()] = {
+          {                             cmd.boundingBox.x,            cmd.boundingBox.y},
+          {(u16)cmd.renderData.text.stringContents.length, cmd.renderData.text.fontSize},
+          char_count,
           clay_col_to_u8(cmd.renderData.text.textColor)
       };
+      texts.emplace_back(cmd.renderData.text.stringContents.chars, cmd.renderData.text.stringContents.length);
       char_count += cmd.renderData.text.stringContents.length;
       break;
     default: break;
     }
   }
+
+  text_chars.bind();
+  text_chars.update(nullptr, (char_count + 3) & ~3);
+
+  char *char_ptr = text_chars.map_range(0, char_count, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+  u32 offset = 0;
+  for (const Text text : texts) {
+    memcpy(char_ptr + offset, text.ptr, text.length);
+    offset += text.length;
+  }
+  text_chars.unmap();
 
   border_vertex.unmap();
 
@@ -295,6 +314,6 @@ void render(const Clay_RenderCommandArray &cmds) {
   text_font.bind(1);
   glUseProgram(shader::get(shader::text));
   glUniform1f(0, 5.0f / 4);
-  glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, text_count);
+  glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, texts.size());
 }
 } // namespace clay
