@@ -79,6 +79,9 @@ Guard init(const vec2 &percent, GLFWwindow *&window) {
 
   glfwSetKeyCallback(window, key::callback);
   glfwSetCharCallback(window, text::callback);
+  glfwSetCursorPosCallback(window, mouse::pos_callback);
+  glfwSetScrollCallback(window, mouse::scroll_callback);
+  glfwSetMouseButtonCallback(window, mouse::button_callback);
 
   if (!gladLoadGL(glfwGetProcAddress)) {
     LOG_ERROR("GL", "Failed to initialize GLAD");
@@ -89,14 +92,6 @@ Guard init(const vec2 &percent, GLFWwindow *&window) {
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   return Guard {window};
-}
-
-void update_cursor_state(GLFWwindow *window) {
-  dvec2 pos;
-  glfwGetCursorPos(window, &pos.x, &pos.y);
-  pos /= clay::dpi * clay::scale;
-
-  Clay_SetPointerState({(float)pos.x, (float)pos.y}, glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS);
 }
 
 void set_mode(GLFWwindow *window, Mode mode) {
