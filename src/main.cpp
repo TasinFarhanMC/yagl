@@ -146,6 +146,7 @@ int main(int argc, const char **argv) noexcept {
   const clay::Guard clay_guard = clay::init(glfw::size);
   if (!clay_guard) { return 1; }
   Clay__debugViewWidth = 600;
+  text::case_trans = text::Case::Upper;
 
   TimePoint<HighResClock> end;
   TimePoint<HighResClock> start = HighResClock::now();
@@ -171,44 +172,52 @@ int main(int argc, const char **argv) noexcept {
     delta_time = Duration<float>(delta).count();
 
     while (passed_time >= meta::TICK_TIME) {
-      if (key::had_state(GLFW_KEY_ESCAPE, key::State::Press)) { glfwSetWindowShouldClose(window, true); }
-
-      if (key::had_state(GLFW_KEY_R, key::State::Press)) {
-        LOG_INFO("Shader", "Reloading shaders...");
-        shader_guard = shader::init(true);
-
-        if (!shader_guard) { LOG_ERROR("Shader", "Failed to reload shaders!"); }
+      if (key::had_state(GLFW_KEY_ESCAPE, key::State::Press)) {
+        if (in_text_box) {
+          exit_text_box();
+        } else {
+          glfwSetWindowShouldClose(window, true);
+        }
       }
 
-      if (key::had_state(GLFW_KEY_BACKSPACE, GLFW_MOD_SHIFT | GLFW_MOD_CONTROL, key::State::Press)) { clay::update_scale(1.0); }
-      if (key::had_state(GLFW_KEY_MINUS, GLFW_MOD_SHIFT | GLFW_MOD_CONTROL, key::State::Press, key::State::Repeat)) {
-        clay::update_scale(clay::scale - 0.1);
-      }
-      if (key::had_state(GLFW_KEY_EQUAL, GLFW_MOD_SHIFT | GLFW_MOD_CONTROL, key::State::Press, key::State::Repeat)) {
-        clay::update_scale(clay::scale + 0.1);
+      if (key::has_state(GLFW_KEY_BACKSPACE, GLFW_MOD_SHIFT | GLFW_MOD_CONTROL, key::State::Press) && !in_text_box) { clay::update_scale(1.0); }
+      if (key::had_state(GLFW_KEY_BACKSPACE, key::State::Press, key::State::Repeat) && in_text_box && !text::string->empty()) {
+        text::string->pop_back();
       }
 
-      if (key::had_state(GLFW_KEY_Q, key::State::Press)) {
-        static bool debug_mode = false;
-        debug_mode = !debug_mode;
-        Clay_SetDebugModeEnabled(debug_mode);
+      if (!in_text_box) {
+        if (key::had_state(GLFW_KEY_R, key::State::Press)) {
+          LOG_INFO("Shader", "Reloading shaders...");
+          shader_guard = shader::init(true);
+
+          if (!shader_guard) { LOG_ERROR("Shader", "Failed to reload shaders!"); }
+        }
+
+        if (key::had_state(GLFW_KEY_MINUS, GLFW_MOD_SHIFT | GLFW_MOD_CONTROL, key::State::Press, key::State::Repeat)) {
+          clay::update_scale(clay::scale - 0.1);
+        }
+        if (key::had_state(GLFW_KEY_EQUAL, GLFW_MOD_SHIFT | GLFW_MOD_CONTROL, key::State::Press, key::State::Repeat)) {
+          clay::update_scale(clay::scale + 0.1);
+        }
+
+        if (key::had_state(GLFW_KEY_Q, key::State::Press)) {
+          static bool debug_mode = false;
+          debug_mode = !debug_mode;
+          Clay_SetDebugModeEnabled(debug_mode);
+        }
       }
 
-      if (key::had_state(GLFW_KEY_F11, key::State::Press) || text::had_state(GLFW_KEY_F11, key::State::Press)) {
+      if (key::had_state(GLFW_KEY_F11, key::State::Press)) {
         static int mode = (int)glfw::Mode::Borderless;
         glfw::set_mode(window, static_cast<glfw::Mode>(mode));
         mode = (mode + 1) % 3;
       }
-
-      if (text::had_state(GLFW_KEY_BACKSPACE, key::State::Press, key::State::Repeat) && !text::string->empty()) { text::string->pop_back(); }
-      if (text::had_state(GLFW_KEY_ESCAPE, key::State::Press)) { exit_text_box(); }
 
       if (mouse::had_state(GLFW_MOUSE_BUTTON_LEFT, mouse::State::Press)) {
         if (Clay_PointerOver(clay::id("Text Feild"))) {
           if (!in_text_box) {
             in_text_box = true;
             LOG_INFO("Text", "Entered Text Feild");
-            glfwSetKeyCallback(window, text::key_callback);
             text::string = &text_input;
           }
         } else if (in_text_box) {
