@@ -43,7 +43,7 @@ int main(int argc, const char **argv) noexcept {
   bool show_help = false;
   bool console = false;
   bool disable_log = false;
-  vec2 window_frac = {2.0f / 3, 2.0f / 3};
+  vec2 window_percent = {2.0f / 3, 2.0f / 3};
 
   lyra::cli cli;
 
@@ -70,22 +70,22 @@ int main(int argc, const char **argv) noexcept {
         | (lyra::group() 
           | lyra::opt([&](String const& s) { 
               if (!s.empty() && s.back() == '%') {
-                window_frac.x = std::stof(s.substr(0, s.size() - 1)) / 100.0f;
+                window_percent.x = std::stof(s.substr(0, s.size() - 1)) / 100.0f;
                 glfw::size.x = 0;
               } else {
-                window_frac.x = 0;
+                window_percent.x = 0;
                 glfw::size.x = std::stoi(s);
               }
-          }, "width")["-w"]["--width"]("Window Width, Use % for screen percentage").required()
+          }, "width")["-w"]["--width"]("Window Width, Use % for screen percentage (default: 67%)").required()
           | lyra::opt([&](String const& s) { 
               if (!s.empty() && s.back() == '%') {
-                window_frac.y = std::stof(s.substr(0, s.size() - 1)) / 100.0f;
+                window_percent.y = std::stof(s.substr(0, s.size() - 1)) / 100.0f;
                 glfw::size.y = 0;
               } else {
-                window_frac.y = 0;
+                window_percent.y = 0;
                 glfw::size.y = std::stoi(s);
               }
-          }, "height")["-h"]["--height"]("Window Height, Use % for screen percentage").required())
+          }, "height")["-h"]["--height"]("Window Height, Use % for screen percentage (default: 67%)").required())
         | lyra::opt(console)["-c"]["--console"]("Print log to console")
         | lyra::opt(disable_log)["-n"]["--no-log"]("Disable logging");
     // clang-format on
@@ -127,7 +127,7 @@ int main(int argc, const char **argv) noexcept {
 
   LOG_INFO("Logger", "Logger Initialized");
 
-  const glfw::Guard glfw_guard = glfw::init(window_frac, window);
+  const glfw::Guard glfw_guard = glfw::init(window_percent, window);
   if (!glfw_guard) { return 1; }
 
   LOG_INFO(

@@ -36,7 +36,7 @@ struct Guard {
   operator bool() const { return window != nullptr; }
 };
 
-Guard init(const vec2 &frac, GLFWwindow *&window);
+Guard init(const vec2 &percent, GLFWwindow *&window);
 
 void update_cursor_state(GLFWwindow *window);
 

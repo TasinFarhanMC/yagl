@@ -13,7 +13,7 @@ namespace glfw {
 ivec2 size;
 ivec2 pos;
 
-Guard init(const vec2 &frac, GLFWwindow *&window) {
+Guard init(const vec2 &percent, GLFWwindow *&window) {
   glfwSetErrorCallback([](int error, const char *desc) { LOG_ERROR("Window", "GLFW Error ({}): {}", error, desc); });
 
   if (!glfwInit()) { return Guard {nullptr}; }
@@ -30,8 +30,8 @@ Guard init(const vec2 &frac, GLFWwindow *&window) {
     return Guard {nullptr};
   }
 
-  if (size.x == 0) { size.x = mode->width * frac.x; };
-  if (size.y == 0) { size.y = mode->height * frac.y; };
+  if (size.x == 0) { size.x = mode->width * percent.x; };
+  if (size.y == 0) { size.y = mode->height * percent.y; };
 
   ivec2 monitor_pos;
   glfwGetMonitorPos(monitor, &monitor_pos.x, &monitor_pos.y);
