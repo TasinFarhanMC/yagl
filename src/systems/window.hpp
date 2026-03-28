@@ -38,8 +38,6 @@ struct Guard {
 
 Guard init(const vec2 &percent, GLFWwindow *&window);
 
-void update_cursor_state(GLFWwindow *window);
-
 enum class Mode {
   Windowed,
   Borderless,

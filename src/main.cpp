@@ -1,3 +1,4 @@
+#include "systems/mouse.hpp"
 #include <phc/phc.hpp>
 
 #include <betr/namespace.hpp>
@@ -33,7 +34,11 @@ Path expand_path(std::string const &input) {
 static GLFWwindow *window;
 
 static Clay_RenderCommandArray build_ui();
+
+static String text_input;
+static bool in_text_box = false;
 void exit_text_box() {
+  in_text_box = false;
   LOG_INFO("Text", "Exited Text Feild");
   glfwSetKeyCallback(window, key::callback);
   text::string = nullptr;
@@ -149,13 +154,14 @@ int main(int argc, const char **argv) noexcept {
 
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
-
-    glfw::update_cursor_state(window);
+    Clay_SetPointerState(
+        {mouse::pos.x / (clay::scale * clay::dpi.x), mouse::pos.y / (clay::scale * clay::dpi.y)},
+        mouse::state[GLFW_MOUSE_BUTTON_LEFT] == mouse::State::Press
+    );
+    Clay_UpdateScrollContainers(true, as_clay2(mouse::scroll), delta_time);
 
     glClear(GL_COLOR_BUFFER_BIT);
-
     clay::render(build_ui());
-
     glfwSwapBuffers(window);
 
     end = HighResClock::now();
@@ -197,6 +203,19 @@ int main(int argc, const char **argv) noexcept {
       if (text::had_state(GLFW_KEY_BACKSPACE, key::State::Press, key::State::Repeat) && !text::string->empty()) { text::string->pop_back(); }
       if (text::had_state(GLFW_KEY_ESCAPE, key::State::Press)) { exit_text_box(); }
 
+      if (mouse::had_state(GLFW_MOUSE_BUTTON_LEFT, mouse::State::Press)) {
+        if (Clay_PointerOver(clay::id("Text Feild"))) {
+          if (!in_text_box) {
+            in_text_box = true;
+            LOG_INFO("Text", "Entered Text Feild");
+            glfwSetKeyCallback(window, text::key_callback);
+            text::string = &text_input;
+          }
+        } else if (in_text_box) {
+          exit_text_box();
+        }
+      }
+
       logger::flush();
 
       passed_time -= meta::TICK_TIME;
@@ -206,7 +225,6 @@ int main(int argc, const char **argv) noexcept {
 }
 
 static Clay_RenderCommandArray build_ui() {
-  static String text_input;
 
   Clay_BeginLayout();
   CLAY({
@@ -214,13 +232,6 @@ static Clay_RenderCommandArray build_ui() {
       .layout = {.sizing = {CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0)}, .padding = {20, 20, 20, 20}, .childGap = 20},
       .border = {.color = {20, 20, 20, 255}, .width = {10, 20, 30, 40}},
   }) {
-    Clay_OnHover(
-        [](Clay_ElementId element_id, Clay_PointerData pointer_data, intptr_t user_data) {
-          if (pointer_data.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) { exit_text_box(); }
-        },
-        0
-    );
-
     static int box_color = 0;
     const Clay_Color colors[2] = {
         {255,  66, 125, 255},
@@ -269,23 +280,12 @@ static Clay_RenderCommandArray build_ui() {
     Clay_TextElementConfig text_config = {.textColor = colors[box_color], .fontSize = 30, .lineHeight = 60};
 
     CLAY({
-        .id = clay::id("Text feild"),
+        .id = clay::id("Text Feild"),
         .layout {.sizing = {CLAY_SIZING_PERCENT(1), CLAY_SIZING_PERCENT(1)}, .padding = {50, 50, 50, 50}, .childAlignment = {.y = CLAY_ALIGN_Y_TOP}},
         .backgroundColor = {100, 100, 100, 255}
     }) {
 
       CLAY_TEXT(clay_string(text_input), &text_config);
-
-      Clay_OnHover(
-          [](Clay_ElementId element_id, Clay_PointerData pointer_data, intptr_t user_data) {
-            if (pointer_data.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
-              LOG_INFO("Text", "Entered Text Feild");
-              glfwSetKeyCallback(window, text::key_callback);
-              text::string = &text_input;
-            }
-          },
-          0
-      );
     }
   }
 
