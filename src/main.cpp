@@ -33,8 +33,7 @@ Path expand_path(std::string const &input) {
 
 static GLFWwindow *window;
 
-static Clay_RenderCommandArray build_ui();
-
+static void render_ui();
 static String text_input;
 static bool in_text_box = false;
 void exit_text_box() {
@@ -163,7 +162,7 @@ int main(int argc, const char **argv) noexcept {
     mouse::scroll = {0, 0};
 
     glClear(GL_COLOR_BUFFER_BIT);
-    clay::render(build_ui());
+    render_ui();
     glfwSwapBuffers(window);
 
     end = HighResClock::now();
@@ -234,7 +233,8 @@ int main(int argc, const char **argv) noexcept {
   return 0;
 }
 
-static Clay_RenderCommandArray build_ui() {
+static void render_ui() {
+  // strings here
 
   Clay_BeginLayout();
   CLAY({
@@ -299,5 +299,5 @@ static Clay_RenderCommandArray build_ui() {
     }
   }
 
-  return Clay_EndLayout();
+  clay::render(Clay_EndLayout());
 }
