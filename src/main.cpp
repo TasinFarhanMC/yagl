@@ -159,7 +159,8 @@ int main(int argc, const char **argv) noexcept {
         {mouse::pos.x / (clay::scale * clay::dpi.x), mouse::pos.y / (clay::scale * clay::dpi.y)},
         mouse::state[GLFW_MOUSE_BUTTON_LEFT] == mouse::State::Press
     );
-    Clay_UpdateScrollContainers(true, as_clay2(mouse::scroll), delta_time);
+    Clay_UpdateScrollContainers(true, as_clay2(mouse::scroll * meta::scroll_speed), delta_time);
+    mouse::scroll = {0, 0};
 
     glClear(GL_COLOR_BUFFER_BIT);
     clay::render(build_ui());

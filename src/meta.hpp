@@ -16,6 +16,8 @@ inline constexpr int major_ver = 0;
 inline constexpr int minor_ver = 0;
 inline constexpr int patch_ver = 1;
 
+inline constexpr float scroll_speed = 5.0f;
+
 inline const betr::String get_version() {
   std::ostringstream ss;
   ss << major_ver << '.' << minor_ver << '.' << patch_ver;
