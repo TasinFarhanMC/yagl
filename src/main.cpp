@@ -145,6 +145,7 @@ int main(int argc, const char **argv) noexcept {
   const clay::Guard clay_guard = clay::init(glfw::size);
   if (!clay_guard) { return 1; }
   Clay__debugViewWidth = 600;
+  text::code_end = 'Z';
   text::case_trans = text::Case::Upper;
 
   TimePoint<HighResClock> end;
@@ -172,20 +173,11 @@ int main(int argc, const char **argv) noexcept {
     delta_time = Duration<float>(delta).count();
 
     while (passed_time >= meta::TICK_TIME) {
-      if (key::had_state(GLFW_KEY_ESCAPE, key::State::Press)) {
-        if (in_text_box) {
-          exit_text_box();
-        } else {
-          glfwSetWindowShouldClose(window, true);
-        }
-      }
-
-      if (key::has_state(GLFW_KEY_BACKSPACE, GLFW_MOD_SHIFT | GLFW_MOD_CONTROL, key::State::Press) && !in_text_box) { clay::update_scale(1.0); }
-      if (key::had_state(GLFW_KEY_BACKSPACE, key::State::Press, key::State::Repeat) && in_text_box && !text::string->empty()) {
-        text::string->pop_back();
-      }
-
       if (!in_text_box) {
+        if (key::had_state(GLFW_KEY_ESCAPE, key::State::Press)) { glfwSetWindowShouldClose(window, true); }
+
+        if (key::had_state(GLFW_KEY_BACKSPACE, GLFW_MOD_SHIFT | GLFW_MOD_CONTROL, key::State::Press)) { clay::update_scale(1.0); }
+
         if (key::had_state(GLFW_KEY_R, key::State::Press)) {
           LOG_INFO("Shader", "Reloading shaders...");
           shader_guard = shader::init(true);
@@ -205,6 +197,10 @@ int main(int argc, const char **argv) noexcept {
           debug_mode = !debug_mode;
           Clay_SetDebugModeEnabled(debug_mode);
         }
+      } else {
+        if (key::had_state(GLFW_KEY_ESCAPE, key::State::Press)) { exit_text_box(); }
+
+        if (key::had_state(GLFW_KEY_BACKSPACE, key::State::Press, key::State::Repeat) && !text::string->empty()) { text::string->pop_back(); }
       }
 
       if (key::had_state(GLFW_KEY_F11, key::State::Press)) {
