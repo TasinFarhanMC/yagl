@@ -175,7 +175,6 @@ int main(int argc, const char **argv) noexcept {
     while (passed_time >= meta::TICK_TIME) {
       if (!in_text_box) {
         if (key::had_state(GLFW_KEY_ESCAPE, key::State::Press)) { glfwSetWindowShouldClose(window, true); }
-
         if (key::had_state(GLFW_KEY_BACKSPACE, GLFW_MOD_SHIFT | GLFW_MOD_CONTROL, key::State::Press)) { clay::update_scale(1.0); }
 
         if (key::had_state(GLFW_KEY_R, key::State::Press)) {
@@ -199,7 +198,6 @@ int main(int argc, const char **argv) noexcept {
         }
       } else {
         if (key::had_state(GLFW_KEY_ESCAPE, key::State::Press)) { exit_text_box(); }
-
         if (key::had_state(GLFW_KEY_BACKSPACE, key::State::Press, key::State::Repeat) && !text::string->empty()) { text::string->pop_back(); }
       }
 
