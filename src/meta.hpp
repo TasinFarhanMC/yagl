@@ -18,6 +18,8 @@ inline constexpr int patch_ver = 1;
 
 inline constexpr float scroll_speed = 5.0f;
 
+inline constexpr int font_glyph_count = 95;
+
 inline const betr::String get_version() {
   std::ostringstream ss;
   ss << major_ver << '.' << minor_ver << '.' << patch_ver;

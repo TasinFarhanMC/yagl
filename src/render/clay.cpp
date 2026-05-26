@@ -1,6 +1,7 @@
 #include <phc/phc.hpp>
 
 #include "clay.hpp"
+#include "meta.hpp"
 
 #include <betr/namespace.hpp>
 
@@ -99,7 +100,7 @@ static clay::Guard init_renderers() {
   border_vao.init();
 
   base_vertex.bind();
-  rect_vao.add_attrib(0, 2, GL_FLOAT, false, sizeof(vec2), (void *)0);
+  border_vao.add_attrib(0, 2, GL_FLOAT, false, sizeof(vec2), (void *)0);
 
   border_rect_vertex.bind();
   setup_rect_attribs(border_vao);
@@ -210,7 +211,7 @@ Guard init(const uvec2 &size) {
 
   Clay_SetMeasureTextFunction(
       [](Clay_StringSlice text, Clay_TextElementConfig *config, void *user_data) -> Clay_Dimensions {
-        return {(float)text.length * config->fontSize, config->fontSize * 5.0f / 4}; // DUMMY
+        return {(float)text.length * config->fontSize, config->fontSize * text_font.height * meta::font_glyph_count / (float)text_font.width};
       },
       nullptr
   );
@@ -227,25 +228,33 @@ void clean() {
 }
 
 void render(const Clay_RenderCommandArray &cmds) {
-  u32 rect_count = 0;
-  u32 border_count = 0;
-  u32 char_count = 0;
+  struct BatchCount {
+    u32 rect = 0;
+    u32 border = 0;
+    u32 char_c = 0;
+    u32 text = 0;
+  };
+
+  BatchCount count;
+  BatchCount offset;
+  Vector<BatchCount> batch_count;
+  Vector<Clay_BoundingBox> scissor_boxes;
 
   rect_vertex.bind();
   rect_vertex.update(nullptr, cmds.length);
-  RectVertex *rect_ptr = rect_vertex.map_range(0, cmds.length, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+  RectVertex *rect_ptr = (RectVertex *)rect_vertex.map_range(0, cmds.length, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 
   border_rect_vertex.bind();
   border_rect_vertex.update(nullptr, cmds.length);
-  RectVertex *border_rect_ptr = border_rect_vertex.map_range(0, cmds.length, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+  RectVertex *border_rect_ptr = (RectVertex *)border_rect_vertex.map_range(0, cmds.length, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 
   border_vertex.bind();
   border_vertex.update(nullptr, cmds.length);
-  BorderVertex *border_ptr = border_vertex.map_range(0, cmds.length, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+  BorderVertex *border_ptr = (BorderVertex *)border_vertex.map_range(0, cmds.length, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 
   text_vertex.bind();
   text_vertex.update(nullptr, cmds.length);
-  TextVertex *text_ptr = text_vertex.map_range(0, cmds.length, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+  TextVertex *text_ptr = (TextVertex *)text_vertex.map_range(0, cmds.length, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 
   struct Text {
     const char *ptr;
@@ -254,66 +263,138 @@ void render(const Clay_RenderCommandArray &cmds) {
   Vector<Text> texts;
   texts.reserve(cmds.length);
 
+  auto render_batches = [&]() {
+    if (count.text > 0) {
+      text_chars.bind();
+      text_chars.update(nullptr, (count.char_c + 3) & ~3);
+
+      char *char_ptr = (char *)text_chars.map_range(0, count.char_c, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+      u32 char_offset = 0;
+      for (int j = 0; j < count.text; j++) {
+        memcpy(char_ptr + char_offset, texts[j + offset.text].ptr, texts[j + offset.text].length);
+        char_offset += texts[j + offset.text].length;
+      }
+      text_chars.unmap();
+    }
+
+    border_vertex.bind();
+    border_vertex.unmap();
+    border_rect_vertex.bind();
+    border_rect_vertex.unmap();
+    rect_vertex.bind();
+    rect_vertex.unmap();
+    text_vertex.bind();
+    text_vertex.unmap();
+
+    if (count.rect > 0) {
+      rect_vao.bind();
+      glUseProgram(shader::get(shader::rect));
+      glDrawArraysInstancedBaseInstance(GL_TRIANGLE_FAN, 0, 4, count.rect, offset.rect);
+    }
+
+    if (count.border > 0) {
+      border_vao.bind();
+      glUseProgram(shader::get(shader::border));
+      glDrawArraysInstancedBaseInstance(GL_TRIANGLE_FAN, 0, 4, count.border, offset.border);
+    }
+
+    if (count.text > 0) {
+      text_vao.bind();
+      text_tbo.bind(0);
+      text_font.bind(1);
+      glUseProgram(shader::get(shader::text));
+      glUniform1f(0, text_font.height * meta::font_glyph_count / (float)text_font.width);
+      glDrawArraysInstancedBaseInstance(GL_TRIANGLE_FAN, 0, 4, count.text, offset.text);
+    }
+  };
+
   for (int i = 0; i < cmds.length; i++) {
     const Clay_RenderCommand &cmd = cmds.internalArray[i];
 
     switch (cmd.commandType) {
     case CLAY_RENDER_COMMAND_TYPE_RECTANGLE:
-      rect_ptr[rect_count++] = {cmd.boundingBox, clay_col_to_u8(cmd.renderData.rectangle.backgroundColor)};
+      rect_ptr[offset.rect + count.rect++] = {cmd.boundingBox, clay_col_to_u8(cmd.renderData.rectangle.backgroundColor)};
       break;
+
     case CLAY_RENDER_COMMAND_TYPE_BORDER:
-      border_rect_ptr[border_count] = {cmd.boundingBox, clay_col_to_u8(cmd.renderData.rectangle.backgroundColor)};
-      border_ptr[border_count] = {
+      border_rect_ptr[offset.border + count.border] = {cmd.boundingBox, clay_col_to_u8(cmd.renderData.rectangle.backgroundColor)};
+      border_ptr[offset.border + count.border] = {
           {cmd.renderData.border.width.left, cmd.renderData.border.width.top, cmd.renderData.border.width.right, cmd.renderData.border.width.bottom}
       };
-      border_count++;
+      count.border++;
       break;
+
     case CLAY_RENDER_COMMAND_TYPE_TEXT:
-      text_ptr[texts.size()] = {
+      text_ptr[offset.text + count.text] = {
           {                             cmd.boundingBox.x,            cmd.boundingBox.y},
           {(u16)cmd.renderData.text.stringContents.length, cmd.renderData.text.fontSize},
-          char_count,
+          count.char_c,
           clay_col_to_u8(cmd.renderData.text.textColor)
       };
-      texts.emplace_back(cmd.renderData.text.stringContents.chars, cmd.renderData.text.stringContents.length);
-      char_count += cmd.renderData.text.stringContents.length;
+      texts.emplace_back(cmd.renderData.text.stringContents.chars, (u16)cmd.renderData.text.stringContents.length);
+      count.text++;
+      count.char_c += cmd.renderData.text.stringContents.length;
       break;
+
+    case CLAY_RENDER_COMMAND_TYPE_SCISSOR_START:
+      batch_count.push_back(count);
+
+      offset.rect += count.rect;
+      offset.border += count.border;
+      offset.char_c += count.char_c;
+      offset.text += count.text;
+      scissor_boxes.push_back(cmd.boundingBox);
+
+      count = {}; // Zero out for the new child block
+      break;
+
+    case CLAY_RENDER_COMMAND_TYPE_SCISSOR_END: {
+      glEnable(GL_SCISSOR_TEST);
+      glScissor(
+          scissor_boxes.back().x, frame_size.y - (scissor_boxes.back().y + scissor_boxes.back().height), scissor_boxes.back().width,
+          scissor_boxes.back().height
+      );
+      vec2 scale = clay::dpi * clay::scale;
+
+      Clay_BoundingBox scaled_scissor = scissor_boxes.back();
+      scaled_scissor.x *= scale.x;
+      scaled_scissor.y *= scale.y;
+      scaled_scissor.width *= scale.x;
+      scaled_scissor.height *= scale.y;
+
+      glScissor(scaled_scissor.x, frame_size.y * scale.y - (scaled_scissor.y + scaled_scissor.height), scaled_scissor.width, scaled_scissor.height);
+
+      scissor_boxes.pop_back();
+      render_batches();
+      glDisable(GL_SCISSOR_TEST);
+
+      count = batch_count.back();
+      batch_count.pop_back();
+
+      texts.resize(offset.text);
+      offset.rect -= count.rect;
+      offset.border -= count.border;
+      offset.char_c -= count.char_c;
+      offset.text -= count.text;
+
+      rect_vertex.bind();
+      rect_ptr = (RectVertex *)rect_vertex.map_range(0, cmds.length, GL_MAP_WRITE_BIT);
+
+      border_rect_vertex.bind();
+      border_rect_ptr = (RectVertex *)border_rect_vertex.map_range(0, cmds.length, GL_MAP_WRITE_BIT);
+
+      border_vertex.bind();
+      border_ptr = (BorderVertex *)border_vertex.map_range(0, cmds.length, GL_MAP_WRITE_BIT);
+
+      text_vertex.bind();
+      text_ptr = (TextVertex *)text_vertex.map_range(0, cmds.length, GL_MAP_WRITE_BIT);
+      break;
+    }
+
     default: break;
     }
   }
 
-  text_chars.bind();
-  text_chars.update(nullptr, (char_count + 3) & ~3);
-
-  char *char_ptr = text_chars.map_range(0, char_count, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
-  u32 offset = 0;
-  for (const Text text : texts) {
-    memcpy(char_ptr + offset, text.ptr, text.length);
-    offset += text.length;
-  }
-  text_chars.unmap();
-
-  border_vertex.unmap();
-
-  border_rect_vertex.bind();
-  border_rect_vertex.unmap();
-
-  rect_vertex.bind();
-  rect_vertex.unmap();
-
-  rect_vao.bind();
-  glUseProgram(shader::get(shader::rect));
-  glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, rect_count);
-
-  border_vao.bind();
-  glUseProgram(shader::get(shader::border));
-  glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, border_count);
-
-  text_vao.bind();
-  text_tbo.bind(0);
-  text_font.bind(1);
-  glUseProgram(shader::get(shader::text));
-  glUniform1f(0, 5.0f / 4);
-  glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, texts.size());
+  render_batches();
 }
 } // namespace clay

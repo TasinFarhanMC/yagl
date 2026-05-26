@@ -198,6 +198,7 @@ int main(int argc, const char **argv) noexcept {
         }
       } else {
         if (key::had_state(GLFW_KEY_ESCAPE, key::State::Press)) { exit_text_box(); }
+        if (key::had_state(GLFW_KEY_ENTER, key::State::Press)) { text_input.push_back('\n'); }
         if (key::had_state(GLFW_KEY_BACKSPACE, key::State::Press, key::State::Repeat) && !text::string->empty()) { text::string->pop_back(); }
       }
 
@@ -228,8 +229,6 @@ int main(int argc, const char **argv) noexcept {
 }
 
 static void render_ui() {
-  // strings here
-
   Clay_BeginLayout();
   CLAY({
       .id = clay::id("Root"),
@@ -281,12 +280,13 @@ static void render_ui() {
       }
     }
 
-    Clay_TextElementConfig text_config = {.textColor = colors[box_color], .fontSize = 30, .lineHeight = 60};
+    Clay_TextElementConfig text_config = {.textColor = colors[box_color], .fontSize = 30, .lineHeight = 60, .wrapMode = CLAY_TEXT_WRAP_NEWLINES};
 
     CLAY({
         .id = clay::id("Text Feild"),
         .layout {.sizing = {CLAY_SIZING_PERCENT(1), CLAY_SIZING_PERCENT(1)}, .padding = {50, 50, 50, 50}, .childAlignment = {.y = CLAY_ALIGN_Y_TOP}},
-        .backgroundColor = {100, 100, 100, 255}
+        .backgroundColor = {100, 100, 100, 255},
+        .clip = {true, true, Clay_GetScrollOffset()}
     }) {
 
       CLAY_TEXT(clay_string(text_input), &text_config);
