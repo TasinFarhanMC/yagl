@@ -25,9 +25,17 @@ template <typename... States> bool had_state(int key, States... states) {
   key::state[key] = State::None;
   return result;
 }
-
 template <typename... States> bool had_state(int key, int mods, States... states) {
   const bool result = ((key::state[key] == states) || ...) && key::mods[key] & mods;
+  key::state[key] = State::None;
+  return result;
+}
+
+template <typename... States> bool has_state_explicit(int key, int mods, States... states) {
+  return ((key::state[key] == states) || ...) && key::mods[key] == mods;
+}
+template <typename... States> bool had_state_explicit(int key, int mods, States... states) {
+  const bool result = ((key::state[key] == states) || ...) && key::mods[key] == mods;
   key::state[key] = State::None;
   return result;
 }
