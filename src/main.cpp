@@ -1,4 +1,5 @@
 #include "systems/mouse.hpp"
+#include <GLFW/glfw3.h>
 #include <phc/phc.hpp>
 
 #include <betr/namespace.hpp>
@@ -200,6 +201,12 @@ int main(int argc, const char **argv) noexcept {
         if (key::had_state(GLFW_KEY_ESCAPE, key::State::Press)) { exit_text_box(); }
         if (key::had_state(GLFW_KEY_ENTER, key::State::Press)) { text_input.push_back('\n'); }
         if (key::had_state(GLFW_KEY_BACKSPACE, key::State::Press, key::State::Repeat) && !text::string->empty()) { text::string->pop_back(); }
+        if (key::had_state(GLFW_KEY_V, GLFW_MOD_CONTROL, key::State::Press, key::State::Repeat)) {
+          text::string->append(glfwGetClipboardString(nullptr));
+        }
+        if (key::had_state(GLFW_KEY_C, GLFW_MOD_CONTROL, key::State::Press, key::State::Repeat)) {
+          glfwSetClipboardString(nullptr, text_input.c_str());
+        }
       }
 
       if (key::had_state(GLFW_KEY_F11, key::State::Press)) {
