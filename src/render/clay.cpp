@@ -1,13 +1,13 @@
 #include <phc/phc.hpp>
 
 #include "clay.hpp"
-#include "meta.hpp"
-
-#include <betr/namespace.hpp>
 
 #include <betr/vector.hpp>
+
 #include <graphics/gltypes.hpp>
+#include <graphics/shader.hpp>
 #include <graphics/texture.hpp>
+#include <meta.hpp>
 #include <systems/logger.hpp>
 
 static char *clay_data;

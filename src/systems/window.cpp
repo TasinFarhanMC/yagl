@@ -7,6 +7,7 @@
 #include <render/clay.hpp>
 #include <systems/key.hpp>
 #include <systems/logger.hpp>
+#include <systems/mouse.hpp>
 #include <systems/text.hpp>
 
 namespace glfw {

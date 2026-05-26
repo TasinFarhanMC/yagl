@@ -14,6 +14,7 @@ cpmaddpackage("gh:g-truc/glm#1.0.3")
 cpmaddpackage("gh:fmtlib/fmt#12.1.0")
 cpmaddpackage("gh:bfgroup/lyra#1.7.0")
 cpmaddpackage("gh:richgel999/miniz#3.1.1")
+cpmaddpackage("gh:mackron/miniaudio#0.11.25")
 cpmaddpackage("gh:tasinfarhanmc/betr@0.1.1")
 cpmaddpackage(NAME glfw3 GIT_REPOSITORY "https://github.com/glfw/glfw.git"
               GIT_TAG "3.4")
@@ -67,7 +68,8 @@ target_link_libraries(
           betr
           miniz
           stb_image
-          clay)
+          clay
+          miniaudio)
 target_compile_definitions(yagl PRIVATE GLFW_INCLUDE_NONE
                                         YAGL_SRC_PATH="${SRC_DIR}")
 target_precompile_headers(yagl PRIVATE "${SRC_DIR}/phc/phc.hpp")
