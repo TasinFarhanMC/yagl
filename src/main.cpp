@@ -1,3 +1,4 @@
+#include "systems/audio.hpp"
 #include "systems/mouse.hpp"
 #include <GLFW/glfw3.h>
 #include <phc/phc.hpp>
@@ -149,6 +150,9 @@ int main(int argc, const char **argv) noexcept {
   text::code_end = 'Z';
   text::case_trans = text::Case::Upper;
 
+  audio::Guard audio_guard = audio::init();
+  if (!audio_guard) { return 1; }
+
   TimePoint<HighResClock> end;
   TimePoint<HighResClock> start = HighResClock::now();
   auto passed_time = HighResClock::duration(0);
@@ -196,6 +200,16 @@ int main(int argc, const char **argv) noexcept {
           static bool debug_mode = false;
           debug_mode = !debug_mode;
           Clay_SetDebugModeEnabled(debug_mode);
+        }
+
+        if (key::had_state(GLFW_KEY_SPACE, key::State::Press)) {
+          static bool play = false;
+          play = !play;
+          if (play) {
+            ma_sound_start(audio::get(audio::otherside));
+          } else {
+            ma_sound_stop(audio::get(audio::otherside));
+          }
         }
       } else {
         if (key::had_state(GLFW_KEY_ESCAPE, key::State::Press)) { exit_text_box(); }

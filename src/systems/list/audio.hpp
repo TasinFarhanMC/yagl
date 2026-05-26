@@ -10,5 +10,7 @@ inline constexpr int base_index = __COUNTER__;
   inline constexpr const char *get_audio_path_by_id(std::integral_constant<int, name>) { return path; }
 
 DEFINE_AUDIO(otherside, "otherside.mp3");
+
 inline constexpr int count = __COUNTER__ - 1 - base_index;
+extern const betr::Array<betr::String, count> links;
 } // namespace audio

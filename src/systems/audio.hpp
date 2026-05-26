@@ -4,8 +4,8 @@
 #include <miniaudio.h>
 
 namespace audio {
-extern const betr::Array<betr::String, count> links;
 extern betr::Array<ma_sound *, count> sounds;
+extern ma_engine engine;
 
 inline ma_sound *get(int id) { return sounds[id]; }
 
