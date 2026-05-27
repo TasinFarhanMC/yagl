@@ -82,13 +82,20 @@ Guard init(bool clean) {
     }
 
     {
-      std::ifstream in(cache, std::ios::binary);
+      std::ifstream in(cache, std::ios::binary | std::ios::ate);
       if (!in) { goto CACHE_MISS; }
+
+      std::streamsize cache_file_size = in.tellg();
+      if (cache_file_size <= static_cast<std::streamsize>(sizeof(GLenum))) { goto CACHE_MISS; }
+      in.seekg(0, std::ios::beg);
 
       GLenum binaryFormat;
       in.read(reinterpret_cast<char *>(&binaryFormat), sizeof(binaryFormat));
 
-      Vector<char> binary((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+      size_t binary_data_size = static_cast<size_t>(cache_file_size) - sizeof(binaryFormat);
+      Vector<char> binary(binary_data_size);
+      in.read(binary.data(), binary_data_size);
+
       glProgramBinary(program, binaryFormat, binary.data(), binary.size());
 
       GLint success = 0;
