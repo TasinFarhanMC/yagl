@@ -39,6 +39,12 @@ struct TextVertex {
   u8vec4 color;
 };
 
+struct TextureVertex {
+  vec2 pos;
+  vec2 size;
+  int id;
+};
+
 static gl::UniformBuffer<SpaceUBO> space_ubo;
 
 static gl::Array<vec2> base_vertex(GL_ARRAY_BUFFER);
@@ -50,9 +56,11 @@ static gl::VertexArray border_vao;
 static gl::Buffer<RectVertex> border_rect_vertex(GL_ARRAY_BUFFER);
 static gl::Buffer<BorderVertex> border_vertex(GL_ARRAY_BUFFER);
 
+static gl::VertexArray texture_vao;
+static gl::Buffer<TextureVertex> texture_vertex(GL_ARRAY_BUFFER);
+
 static gl::VertexArray text_vao;
 static gl::Buffer<char> text_chars(GL_TEXTURE_BUFFER);
-
 static gl::Buffer<TextVertex> text_vertex(GL_ARRAY_BUFFER);
 static gl::TextureBuffer text_tbo;
 
@@ -70,9 +78,10 @@ static clay::Guard init_renderers() {
   border_vertex.init();
   border_rect_vertex.init();
 
+  texture_vertex.init();
+
   text_vertex.init();
   text_chars.init();
-
   text_tbo.init(text_chars, GL_R32UI);
 
   auto setup_rect_attribs = [](const gl::VertexArray &vao) {
@@ -86,6 +95,8 @@ static clay::Guard init_renderers() {
     vao.set_divisor(3, 1);
   };
 
+  // Rect
+
   rect_vao.init();
 
   base_vertex.bind();
@@ -93,6 +104,8 @@ static clay::Guard init_renderers() {
 
   rect_vertex.bind();
   setup_rect_attribs(rect_vao);
+
+  // Border
 
   border_vao.init();
 
@@ -105,6 +118,26 @@ static clay::Guard init_renderers() {
   border_vertex.bind();
   border_vao.add_iattrib(4, 4, GL_UNSIGNED_SHORT, sizeof(BorderVertex), (void *)offsetof(BorderVertex, width));
   border_vao.set_divisor(4, 1);
+
+  // Texture
+
+  texture_vao.init();
+
+  base_vertex.bind();
+  texture_vao.add_attrib(0, 2, GL_FLOAT, false, sizeof(vec2), (void *)0);
+
+  texture_vertex.bind();
+
+  texture_vao.add_attrib(1, 2, GL_FLOAT, false, sizeof(vec2), (void *)offsetof(TextureVertex, pos));
+  texture_vao.set_divisor(1, 1);
+
+  texture_vao.add_attrib(2, 2, GL_FLOAT, false, sizeof(vec2), (void *)offsetof(TextureVertex, size));
+  texture_vao.set_divisor(2, 1);
+
+  texture_vao.add_iattrib(3, 1, GL_INT, sizeof(u32), (void *)offsetof(TextureVertex, id));
+  texture_vao.set_divisor(3, 1);
+
+  // Text
 
   text_vao.init();
 
@@ -135,6 +168,7 @@ static void clean_renderers() {
   rect_vertex.destroy();
   border_vertex.destroy();
   border_rect_vertex.destroy();
+  texture_vertex.destroy();
   text_vertex.destroy();
   text_chars.destroy();
 
@@ -142,6 +176,7 @@ static void clean_renderers() {
 
   rect_vao.destroy();
   border_vao.destroy();
+  texture_vao.destroy();
   text_vao.destroy();
 }
 
@@ -230,6 +265,7 @@ void render(const Clay_RenderCommandArray &cmds) {
     i32 border = 0;
     i32 char_c = 0;
     i32 text = 0;
+    i32 texture = 0;
   };
 
   BatchCount count;
@@ -248,6 +284,10 @@ void render(const Clay_RenderCommandArray &cmds) {
   border_vertex.bind();
   border_vertex.update(nullptr, cmds.length);
   BorderVertex *border_ptr = (BorderVertex *)border_vertex.map_range(0, cmds.length, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+
+  texture_vertex.bind();
+  texture_vertex.update(nullptr, cmds.length);
+  TextureVertex *texture_ptr = (TextureVertex *)texture_vertex.map_range(0, cmds.length, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 
   text_vertex.bind();
   text_vertex.update(nullptr, cmds.length);
@@ -280,22 +320,31 @@ void render(const Clay_RenderCommandArray &cmds) {
     border_rect_vertex.unmap();
     rect_vertex.bind();
     rect_vertex.unmap();
+    texture_vertex.bind();
+    texture_vertex.unmap();
     text_vertex.bind();
     text_vertex.unmap();
 
-    if (count.rect > 0) {
+    if (count.rect) {
       rect_vao.bind();
       glUseProgram(shader::get(shader::rect));
       glDrawArraysInstancedBaseInstance(GL_TRIANGLE_FAN, 0, 4, count.rect, offset.rect);
     }
 
-    if (count.border > 0) {
+    if (count.border) {
       border_vao.bind();
       glUseProgram(shader::get(shader::border));
       glDrawArraysInstancedBaseInstance(GL_TRIANGLE_FAN, 0, 4, count.border, offset.border);
     }
 
-    if (count.text > 0) {
+    if (count.texture) {
+      texture_vao.bind();
+      texture::tbo.bind(0);
+      glUseProgram(shader::get(shader::texture));
+      glDrawArraysInstancedBaseInstance(GL_TRIANGLE_FAN, 0, 4, count.texture, offset.texture);
+    }
+
+    if (count.text) {
       text_vao.bind();
       texture::tbo.bind(0);
       text_tbo.bind(1);
@@ -322,6 +371,13 @@ void render(const Clay_RenderCommandArray &cmds) {
       };
       count.border++;
       break;
+    case CLAY_RENDER_COMMAND_TYPE_IMAGE:
+      texture_ptr[offset.texture + count.texture++] = {
+          {    cmd.boundingBox.x,      cmd.boundingBox.y},
+          {cmd.boundingBox.width, cmd.boundingBox.height},
+          static_cast<int>(reinterpret_cast<uintptr_t>(cmd.renderData.image.imageData))
+      };
+      break;
 
     case CLAY_RENDER_COMMAND_TYPE_TEXT:
       text_ptr[offset.text + count.text] = {
@@ -340,6 +396,7 @@ void render(const Clay_RenderCommandArray &cmds) {
 
       offset.rect += count.rect;
       offset.border += count.border;
+      offset.texture += count.texture;
       offset.char_c += count.char_c;
       offset.text += count.text;
       scissor_boxes.push_back(cmd.boundingBox);
@@ -349,10 +406,6 @@ void render(const Clay_RenderCommandArray &cmds) {
 
     case CLAY_RENDER_COMMAND_TYPE_SCISSOR_END: {
       glEnable(GL_SCISSOR_TEST);
-      glScissor(
-          scissor_boxes.back().x, frame_size.y - (scissor_boxes.back().y + scissor_boxes.back().height), scissor_boxes.back().width,
-          scissor_boxes.back().height
-      );
       vec2 scale = clay::dpi * clay::scale;
 
       Clay_BoundingBox scaled_scissor = scissor_boxes.back();
@@ -373,6 +426,7 @@ void render(const Clay_RenderCommandArray &cmds) {
       texts.resize(offset.text);
       offset.rect -= count.rect;
       offset.border -= count.border;
+      offset.texture -= count.texture;
       offset.char_c -= count.char_c;
       offset.text -= count.text;
 
@@ -385,6 +439,9 @@ void render(const Clay_RenderCommandArray &cmds) {
       border_vertex.bind();
       border_ptr = (BorderVertex *)border_vertex.map_range(0, cmds.length, GL_MAP_WRITE_BIT);
 
+      texture_vertex.bind();
+      texture_ptr = (TextureVertex *)texture_vertex.map_range(0, cmds.length, GL_MAP_WRITE_BIT);
+
       text_vertex.bind();
       text_ptr = (TextVertex *)text_vertex.map_range(0, cmds.length, GL_MAP_WRITE_BIT);
       break;
@@ -395,5 +452,5 @@ void render(const Clay_RenderCommandArray &cmds) {
   }
 
   render_batches();
-}
+} // namespace clay
 } // namespace clay

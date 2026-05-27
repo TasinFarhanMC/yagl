@@ -282,9 +282,11 @@ static void render_ui() {
                    .layoutDirection = CLAY_TOP_TO_BOTTOM
         }
     }) {
+      CLAY({.id = clay::id("Img"), .layout = {.sizing = {CLAY_SIZING_FIT(50), CLAY_SIZING_FIT(50)}}, .image = {(void *)texture::img}}) {}
+
       CLAY(
           {.id = clay::id("Box"),
-           .layout {.sizing = {CLAY_SIZING_PERCENT(0.5), CLAY_SIZING_PERCENT(0.5)}},
+           .layout = {.sizing = {CLAY_SIZING_PERCENT(0.5), CLAY_SIZING_PERCENT(0.5)}},
            .backgroundColor = Clay_Hovered() ? hover_colors[box_color] : colors[box_color]}
       ) {}
 
@@ -315,7 +317,6 @@ static void render_ui() {
         .backgroundColor = {100, 100, 100, 255},
         .clip = {true, true, Clay_GetScrollOffset()}
     }) {
-
       CLAY_TEXT(clay_string(text_input), &text_config);
     }
   }
