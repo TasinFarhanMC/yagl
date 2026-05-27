@@ -257,6 +257,8 @@ int main(int argc, const char **argv) noexcept {
 
 static void render_ui() {
   Clay_BeginLayout();
+  Clay_TextElementConfig text_config = {.textColor = {}, .fontSize = 30, .lineHeight = 60, .wrapMode = CLAY_TEXT_WRAP_NEWLINES};
+
   CLAY({
       .id = clay::id("Root"),
       .layout = {.sizing = {CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0)}, .padding = {20, 20, 20, 20}, .childGap = 20},
@@ -309,14 +311,13 @@ static void render_ui() {
       }
     }
 
-    Clay_TextElementConfig text_config = {.textColor = colors[box_color], .fontSize = 30, .lineHeight = 60, .wrapMode = CLAY_TEXT_WRAP_NEWLINES};
-
     CLAY({
         .id = clay::id("Text Feild"),
         .layout {.sizing = {CLAY_SIZING_PERCENT(1), CLAY_SIZING_PERCENT(1)}, .padding = {50, 50, 50, 50}, .childAlignment = {.y = CLAY_ALIGN_Y_TOP}},
         .backgroundColor = {100, 100, 100, 255},
         .clip = {true, true, Clay_GetScrollOffset()}
     }) {
+      text_config.textColor = colors[box_color];
       CLAY_TEXT(clay_string(text_input), &text_config);
     }
   }
