@@ -1,6 +1,6 @@
 #include <phc/phc.hpp>
 
-#include "shader_list.hpp"
+#include "shader.hpp"
 #include <betr/array.hpp>
 #include <utility>
 

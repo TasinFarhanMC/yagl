@@ -1,5 +1,6 @@
 #pragma once
 #include <GLFW/glfw3.h>
+#include <betr/array.hpp>
 #include <math.hpp>
 
 namespace mouse {

@@ -31,7 +31,7 @@ static bool check_shader(GLuint shader, const String &type, const String &base, 
     glGetShaderInfoLog(shader, len, nullptr, log.data());
   }
 
-  LOG_ERROR("Shader", "{} shader compile error [{}] -> `{}`:\n{}", type, base, path, log);
+  LOG_ERROR("Graphics/Shader", "{} shader compile error [{}] -> `{}`:\n{}", type, base, path, log);
   return false;
 };
 
@@ -46,10 +46,10 @@ Guard init(bool clean) {
     return Guard {false};
   }
 
-  LOG_INFO("Shader", "Validated shader cache directory `{}`", get_shader_cache().string());
+  LOG_INFO("Graphics/Shader", "Validated shader cache directory `{}`", get_shader_cache().string());
 
-  for (int i = 0; i < links.size(); i++) {
-    const auto &link = links[i];
+  for (int i = 0; i < count; i++) {
+    const String &link = links[i];
     const Path cache = get_shader_cache() / link;
 
     GLuint program = glCreateProgram();
@@ -64,19 +64,19 @@ Guard init(bool clean) {
     frag.replace_extension(".frag.glsl");
 
     if (!fs::exists(cache)) {
-      LOG_INFO("Shader", "Cache not found for [{}] compiling instead", link);
+      LOG_INFO("Graphics/Shader", "Cache not found for [{}] compiling instead", link);
       goto CACHE_MISS;
     }
 
     {
-      auto cache_time = fs::last_write_time(cache);
+      fs::file_time_type cache_time = fs::last_write_time(cache);
       bool out_of_date = false;
 
       if (fs::exists(vert) && fs::last_write_time(vert) > cache_time) out_of_date = true;
       if (fs::exists(frag) && fs::last_write_time(frag) > cache_time) out_of_date = true;
 
       if (out_of_date) {
-        LOG_WARN("Shader", "Source changed for [{}] re-compiling", link);
+        LOG_WARN("Graphics/Shader", "Source changed for [{}] re-compiling", link);
         goto CACHE_MISS;
       }
     }
@@ -96,7 +96,7 @@ Guard init(bool clean) {
 
       cache_hit = success;
       if (success) {
-        LOG_INFO("Shader", "Cache loaded for [{}]", link);
+        LOG_INFO("Graphics/Shader", "Cache loaded for [{}]", link);
         programs[i] = program;
         continue;
       }
@@ -110,7 +110,7 @@ Guard init(bool clean) {
         glGetProgramInfoLog(program, logLength, nullptr, log.data());
       }
 
-      LOG_WARN("Shader", "Cache load failed for [{}] compiling instead:\n{}", link, log.data());
+      LOG_WARN("Graphics/Shader", "Cache load failed for [{}] compiling instead:\n{}", link, log.data());
 
       glDeleteProgram(program);
       program = glCreateProgram();
@@ -121,13 +121,13 @@ Guard init(bool clean) {
     const String frag_src = read_file(frag);
 
     if (vert_src.empty()) {
-      LOG_ERROR("Shader", "Failed to read vertex shader [{}] -> `{}`", link, vert.string());
+      LOG_ERROR("Graphics/Shader", "Failed to read vertex shader [{}] -> `{}`", link, vert.string());
       glDeleteProgram(program);
       return Guard {false};
     }
 
     if (frag_src.empty()) {
-      LOG_ERROR("Shader", "Failed to read fragment shader [{}] -> `{}`", link, frag.string());
+      LOG_ERROR("Graphics/Shader", "Failed to read fragment shader [{}] -> `{}`", link, frag.string());
       glDeleteProgram(program);
       return Guard {false};
     }
@@ -173,18 +173,18 @@ Guard init(bool clean) {
         glGetProgramInfoLog(program, len, nullptr, log.data());
       }
 
-      LOG_ERROR("Shader", "Link error [{}]:\n{}", link, log);
+      LOG_ERROR("Graphics/Shader", "Link error [{}]:\n{}", link, log);
       glDeleteProgram(program);
       return Guard {false};
     }
 
     if (clean) {
       glDeleteProgram(programs[i]);
-      LOG_INFO("Shader", "Deleted Old [{}]", link);
+      LOG_INFO("Graphics/Shader", "Deleted Old [{}]", link);
     }
 
     programs[i] = program;
-    LOG_INFO("Shader", "Compiled and loaded [{}]", link);
+    LOG_INFO("Graphics/Shader", "Compiled and loaded [{}]", link);
 
     GLint binaryLength = 0;
     glGetProgramiv(program, GL_PROGRAM_BINARY_LENGTH, &binaryLength);
@@ -204,6 +204,6 @@ Guard init(bool clean) {
 
 void clean() {
   for (const GLuint program : programs) { glDeleteProgram(program); }
-  LOG_INFO("Shader", "Deleted all shaders");
+  LOG_INFO("Graphics/Shader", "Deleted all shaders");
 }
 } // namespace shader

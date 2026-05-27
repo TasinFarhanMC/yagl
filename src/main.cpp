@@ -1,7 +1,6 @@
-#include "systems/audio.hpp"
-#include "systems/mouse.hpp"
-#include <GLFW/glfw3.h>
 #include <phc/phc.hpp>
+
+#include <GLFW/glfw3.h>
 
 #include <betr/namespace.hpp>
 
@@ -17,8 +16,11 @@
 #include <meta.hpp>
 #include <render/clay.hpp>
 
+#include <graphics/systems/texture.hpp>
+#include <systems/audio.hpp>
 #include <systems/key.hpp>
 #include <systems/logger.hpp>
+#include <systems/mouse.hpp>
 #include <systems/text.hpp>
 #include <systems/window.hpp>
 
@@ -153,6 +155,9 @@ int main(int argc, const char **argv) noexcept {
   audio::Guard audio_guard = audio::init();
   if (!audio_guard) { return 1; }
 
+  texture::Guard texture_guard = texture::init();
+  if (!texture_guard) { return 1; }
+
   TimePoint<HighResClock> end;
   TimePoint<HighResClock> start = HighResClock::now();
   auto passed_time = HighResClock::duration(0);
@@ -204,7 +209,8 @@ int main(int argc, const char **argv) noexcept {
 
         if (key::had_state(GLFW_KEY_SPACE, key::State::Press)) {
           static bool play = false;
-          play = !play;
+          if (!ma_sound_at_end(audio::get(audio::otherside))) { play = !play; }
+
           if (play) {
             ma_sound_start(audio::get(audio::otherside));
           } else {

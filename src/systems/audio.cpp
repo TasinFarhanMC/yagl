@@ -1,6 +1,8 @@
 #include <phc/phc.hpp>
 
 #include "audio.hpp"
+#include <meta.hpp>
+#include <systems/logger.hpp>
 
 namespace audio {
 Array<ma_sound *, count> sounds;
@@ -11,14 +13,14 @@ Guard init(bool clean) {
 
   result = ma_engine_init(NULL, &engine);
   if (result != MA_SUCCESS) {
-    LOG_ERROR("Audio", "Failed to initialize miniaudio engine");
+    LOG_ERROR("Init", "Failed to initialize miniaudio engine");
     return Guard {false};
   }
 
-  LOG_INFO("Audio", "MiniAudio engine initialized");
+  LOG_INFO("Init", "Audio engine initialized");
 
-  for (int i = 0; i < links.size(); i++) {
-    const auto &link = links[i];
+  for (int i = 0; i < count; i++) {
+    const String &link = links[i];
     const Path path = get_audio_path() / link;
 
     ma_sound *sound = new ma_sound();

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <glad/gl.h>
-#include <initializer_list>
+#include <span>
 #include <systems/logger.hpp>
 
 namespace gl {
@@ -14,11 +14,17 @@ public:
 
   operator GLuint() const { return this->id; }
 
-  void init(const std::initializer_list<T> data = {}) {
+  void init(std::initializer_list<T> data) { init(std::span<const T>(data)); }
+  void init(std::span<const T> data) {
     glGenBuffers(1, &id);
     glBindBuffer(type, id);
-    glBufferData(type, data.size() * sizeof(T), data.begin(), GL_DYNAMIC_DRAW);
+    glBufferData(type, data.size() * sizeof(T), data.data(), GL_DYNAMIC_DRAW);
     LOG_INFO("Graphics/GL/Buffer", "Initialized buffer {} with {} elements", id, data.size());
+  }
+  void init() {
+    glGenBuffers(1, &id);
+    glBindBuffer(type, id);
+    LOG_INFO("Graphics/GL/Buffer", "Initialized buffer {} with 0 elements", id);
   }
 
   void destroy() {
@@ -46,10 +52,11 @@ public:
 
   operator GLuint() const { return this->id; }
 
-  void init(const std::initializer_list<T> data) {
+  void init(std::initializer_list<T> data) { init(std::span<const T>(data)); }
+  void init(std::span<const T> data) {
     glGenBuffers(1, &id);
     glBindBuffer(type, id);
-    glBufferData(type, data.size() * sizeof(T), data.begin(), GL_STATIC_DRAW);
+    glBufferData(type, data.size() * sizeof(T), data.data(), GL_STATIC_DRAW);
     LOG_INFO("Graphics/GL/Array", "Initialized array buffer {} with {} elements", id, data.size());
   }
 
@@ -103,20 +110,26 @@ public:
 
 template <typename T> class UniformBuffer {
   GLuint id = 0;
-  GLuint binding;
 
 public:
-  UniformBuffer(GLuint binding) : binding(binding) {}
+  UniformBuffer() {}
 
+  void init() {
+    glGenBuffers(1, &id);
+    glBindBuffer(GL_UNIFORM_BUFFER, id);
+    LOG_INFO("Graphics/GL/UBO", "Created UniformBuffer {}", id);
+  }
   void init(const T &initial) {
     glGenBuffers(1, &id);
     glBindBuffer(GL_UNIFORM_BUFFER, id);
     glBufferData(GL_UNIFORM_BUFFER, sizeof(T), &initial, GL_DYNAMIC_DRAW);
-    glBindBufferBase(GL_UNIFORM_BUFFER, binding, id);
-    LOG_INFO("Graphics/GL/UBO", "Created UniformBuffer {} bound to slot {}", id, binding);
+    LOG_INFO("Graphics/GL/UBO", "Created UniformBuffer {}", id);
   }
 
+  void update(const T *data, int size) { glBufferData(GL_UNIFORM_BUFFER, sizeof(T) * size, data, GL_DYNAMIC_DRAW); }
+
   void bind() { glBindBuffer(GL_UNIFORM_BUFFER, id); }
+  void bind_base(GLuint binding) { glBindBufferBase(GL_UNIFORM_BUFFER, binding, id); }
 
   void set(const T &value) { glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(T), &value); }
 
@@ -132,5 +145,32 @@ public:
   }
 
   operator GLuint() const { return id; }
+};
+
+class TextureBuffer {
+  GLuint id = 0;
+  GLuint buffer;
+
+public:
+  operator GLuint() const { return id; }
+
+  void init(GLuint buffer, GLenum format) {
+    this->buffer = buffer;
+
+    glGenTextures(1, &id);
+    glBindTexture(GL_TEXTURE_BUFFER, id);
+    glTexBuffer(GL_TEXTURE_BUFFER, format, buffer);
+    LOG_INFO("Graphics/GL/TBO", "Created TextureBuffer {}", id);
+  }
+
+  void bind(GLuint slot) {
+    glActiveTexture(GL_TEXTURE0 + slot);
+    glBindTexture(GL_TEXTURE_BUFFER, id);
+  }
+
+  void destroy() {
+    glDeleteTextures(1, &id);
+    LOG_INFO("Graphics/GL/TBO", "Deleted TextureBuffer {}", id);
+  }
 };
 } // namespace gl

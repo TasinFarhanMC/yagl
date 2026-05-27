@@ -26,7 +26,7 @@ fmt::memory_buffer buffer;
 
 std::string current_time() {
   using namespace std::chrono;
-  auto now = system_clock::now();
+  time_point now = system_clock::now();
   std::time_t now_c = system_clock::to_time_t(now);
 
   std::tm local_tm {};
@@ -54,7 +54,7 @@ Guard start(bool disable, bool console) {
     file.open(log_path, std::ios::out | std::ios::trunc);
 
     using namespace std::chrono;
-    auto now = system_clock::now();
+    time_point now = system_clock::now();
     std::time_t now_c = system_clock::to_time_t(now);
 
     std::tm local_tm {};

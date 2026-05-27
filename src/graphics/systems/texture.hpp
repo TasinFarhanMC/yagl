@@ -1,11 +1,21 @@
 #pragma once
-#include "list/shader.hpp"
 #include <betr/array.hpp>
+#include <graphics/gltypes.hpp>
+#include <graphics/list/texture.hpp>
+#include <math.hpp>
 
-namespace shader {
-extern betr::Array<unsigned, count> programs;
+namespace texture {
+struct Meta {
+  ivec2 size;
+  i32 offset;
+  u32 padding;
+};
 
-inline unsigned get(int id) { return programs[id]; }
+extern betr::Array<Meta, count> metas;
+extern gl::UniformBuffer<Meta> meta_ubo;
+extern gl::TextureBuffer tbo;
+
+inline const Meta &get(int id) { return metas[id]; }
 
 void clean();
 
@@ -35,4 +45,4 @@ struct Guard {
 };
 
 Guard init(bool clean = false);
-} // namespace shader
+} // namespace texture

@@ -6,15 +6,16 @@
 
 #include <graphics/gltypes.hpp>
 #include <graphics/shader.hpp>
-#include <graphics/texture.hpp>
+#include <graphics/systems/texture.hpp>
 #include <meta.hpp>
 #include <systems/logger.hpp>
 
 static char *clay_data;
 static vec2 frame_size(1.0f);
 
-struct ClayUBO {
+struct SpaceUBO {
   vec2 space;
+  float y;
 };
 
 struct RectVertex {
@@ -34,11 +35,11 @@ struct TextVertex {
     u16 scale;
   } count_scale;
 
-  u32 offset;
+  i32 offset;
   u8vec4 color;
 };
 
-static gl::UniformBuffer<ClayUBO> clay_ubo(0);
+static gl::UniformBuffer<SpaceUBO> space_ubo;
 
 static gl::Array<vec2> base_vertex(GL_ARRAY_BUFFER);
 
@@ -53,12 +54,10 @@ static gl::VertexArray text_vao;
 static gl::Buffer<char> text_chars(GL_TEXTURE_BUFFER);
 
 static gl::Buffer<TextVertex> text_vertex(GL_ARRAY_BUFFER);
-static TextureBuffer text_tbo;
-
-static Texture2D text_font("font.png", Texture2D::PIXELATED);
+static gl::TextureBuffer text_tbo;
 
 static clay::Guard init_renderers() {
-  clay_ubo.init({frame_size});
+  space_ubo.init({frame_size, -1.0f});
 
   base_vertex.init({
       {1.0f, 1.0f},
@@ -75,8 +74,6 @@ static clay::Guard init_renderers() {
   text_chars.init();
 
   text_tbo.init(text_chars, GL_R32UI);
-
-  if (!text_font.init()) { return clay::Guard {false}; }
 
   auto setup_rect_attribs = [](const gl::VertexArray &vao) {
     vao.add_attrib(1, 2, GL_FLOAT, false, sizeof(RectVertex), (void *)offsetof(RectVertex, bounding_box.x));
@@ -131,7 +128,7 @@ static clay::Guard init_renderers() {
 }
 
 static void clean_renderers() {
-  clay_ubo.destroy();
+  space_ubo.destroy();
 
   base_vertex.destroy();
 
@@ -142,7 +139,6 @@ static void clean_renderers() {
   text_chars.destroy();
 
   text_tbo.destroy();
-  text_font.destroy();
 
   rect_vao.destroy();
   border_vao.destroy();
@@ -159,8 +155,8 @@ void update_viewport(vec2 size) {
   if (Clay_GetCurrentContext()) {
     Clay_SetLayoutDimensions({frame_size.x, frame_size.y});
 
-    clay_ubo.bind();
-    clay_ubo.set({frame_size});
+    space_ubo.bind();
+    space_ubo.set({frame_size, -1.0f});
   }
 }
 
@@ -171,8 +167,8 @@ void update_dpi(vec2 dpi) {
   if (Clay_GetCurrentContext()) {
     Clay_SetLayoutDimensions({frame_size.x, frame_size.y});
 
-    clay_ubo.bind();
-    clay_ubo.set({frame_size});
+    space_ubo.bind();
+    space_ubo.set({frame_size, -1.0f});
   }
 }
 void update_scale(float scale) {
@@ -181,8 +177,8 @@ void update_scale(float scale) {
 
   Clay_SetLayoutDimensions({frame_size.x, frame_size.y});
 
-  clay_ubo.bind();
-  clay_ubo.set({frame_size});
+  space_ubo.bind();
+  space_ubo.set({frame_size, -1.0f});
 }
 
 Guard init(const uvec2 &size) {
@@ -198,7 +194,7 @@ Guard init(const uvec2 &size) {
          case CLAY_ERROR_TYPE_TEXT_MEASUREMENT_CAPACITY_EXCEEDED:
            Clay_SetMaxMeasureTextCacheWordCount(Clay_GetMaxMeasureTextCacheWordCount() * 2);
            break;
-         default: LOG_ERROR("UI/Clay", "{}", error.errorText.chars); return;
+         default: LOG_ERROR("Renderer/UI/Clay", "{}", error.errorText.chars); return;
          }
 
          delete[] clay_data;
@@ -211,12 +207,13 @@ Guard init(const uvec2 &size) {
 
   Clay_SetMeasureTextFunction(
       [](Clay_StringSlice text, Clay_TextElementConfig *config, void *user_data) -> Clay_Dimensions {
-        return {(float)text.length * config->fontSize, config->fontSize * text_font.height * meta::font_glyph_count / (float)text_font.width};
+        const texture::Meta &font_meta = texture::get(texture::font);
+        return {(float)text.length * config->fontSize, config->fontSize * font_meta.size.y * meta::font_glyph_count / (float)font_meta.size.x};
       },
       nullptr
   );
 
-  LOG_INFO("UI", "Clay Initialized");
+  LOG_INFO("Renderer/UI", "Clay Initialized");
 
   return init_renderers();
 }
@@ -224,15 +221,15 @@ Guard init(const uvec2 &size) {
 void clean() {
   delete[] clay_data;
   clean_renderers();
-  LOG_INFO("UI", "Completed Clay Cleanup");
+  LOG_INFO("Renderer/UI", "Completed Clay Cleanup");
 }
 
 void render(const Clay_RenderCommandArray &cmds) {
   struct BatchCount {
-    u32 rect = 0;
-    u32 border = 0;
-    u32 char_c = 0;
-    u32 text = 0;
+    i32 rect = 0;
+    i32 border = 0;
+    i32 char_c = 0;
+    i32 text = 0;
   };
 
   BatchCount count;
@@ -300,14 +297,16 @@ void render(const Clay_RenderCommandArray &cmds) {
 
     if (count.text > 0) {
       text_vao.bind();
-      text_tbo.bind(0);
-      text_font.bind(1);
+      texture::tbo.bind(0);
+      text_tbo.bind(1);
       glUseProgram(shader::get(shader::text));
-      glUniform1f(0, text_font.height * meta::font_glyph_count / (float)text_font.width);
+      glUniform1f(0, texture::font);
       glDrawArraysInstancedBaseInstance(GL_TRIANGLE_FAN, 0, 4, count.text, offset.text);
     }
   };
 
+  space_ubo.bind_base(0);
+  texture::meta_ubo.bind_base(1);
   for (int i = 0; i < cmds.length; i++) {
     const Clay_RenderCommand &cmd = cmds.internalArray[i];
 
