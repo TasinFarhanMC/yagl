@@ -405,6 +405,8 @@ void render(const Clay_RenderCommandArray &cmds) {
       break;
 
     case CLAY_RENDER_COMMAND_TYPE_SCISSOR_END: {
+      if (!scissor_boxes.size()) { return; }
+
       glEnable(GL_SCISSOR_TEST);
       vec2 scale = clay::dpi * clay::scale;
 
