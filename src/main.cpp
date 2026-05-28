@@ -9,14 +9,15 @@
 #include <betr/filesystem.hpp>
 #include <betr/vector.hpp>
 #include <glad/gl.h>
-#include <graphics/shader.hpp>
 #include <iostream>
 #include <lyra/lyra.hpp>
 #include <math.hpp>
 #include <meta.hpp>
 #include <render/clay.hpp>
 
+#include <graphics/systems/shader.hpp>
 #include <graphics/systems/texture.hpp>
+
 #include <systems/audio.hpp>
 #include <systems/key.hpp>
 #include <systems/logger.hpp>

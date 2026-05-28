@@ -1,6 +1,6 @@
 #pragma once
-#include "list/shader.hpp"
 #include <betr/array.hpp>
+#include <graphics/list/shader.hpp>
 
 namespace shader {
 extern betr::Array<unsigned, count> programs;

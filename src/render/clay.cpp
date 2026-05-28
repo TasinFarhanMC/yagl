@@ -5,7 +5,7 @@
 #include <betr/vector.hpp>
 
 #include <graphics/gltypes.hpp>
-#include <graphics/shader.hpp>
+#include <graphics/systems/shader.hpp>
 #include <graphics/systems/texture.hpp>
 #include <meta.hpp>
 #include <systems/logger.hpp>
